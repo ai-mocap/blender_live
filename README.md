@@ -10,6 +10,9 @@ This plugin lets you stream your animation data from Rokoko Studio directly into
 - Blender **2.80** or higher
 - For live stream data: Rokoko Studio 1.18.0b
 
+## Installation
+- `mkdir -p vendor && pip install aiohttp -t vendor`
+
 ## Features
 - Live stream data:
     - Up to five actors that can all include both body, face (52 blendshapes) and finger data at the same time
