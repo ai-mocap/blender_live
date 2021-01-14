@@ -59,8 +59,9 @@ class Receiver:
         try:
             for data_raw in self.data_list:
                 data = json.loads(data_raw)
-                minimal_hand.process_bones(self.line_no, data['theta'])
-                minimal_hand.process_xyz(self.line_no, data['xyz'])
+                print(data)
+                minimal_hand.process_bones(self.line_no, data['hands'][0]['tetha'])
+                minimal_hand.process_xyz(self.line_no, data['hands'][0]['xyz'])
                 self.line_no += 1
         except ValueError as exc:
             print('Packet contained no data', exc)
@@ -157,6 +158,7 @@ class Receiver:
         await self.site.start()
 
     def start(self, port):
+        print('started')
         minimal_hand.init()
         self.loop = asyncio.get_event_loop()
         self.line_no = 0

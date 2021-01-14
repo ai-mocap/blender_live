@@ -114,16 +114,9 @@ def register():
     # Register updater and check for Rokoko Studio Live updates
     updater_ops.register(bl_info, beta_branch)
 
-    # Check if the user is logged in, show the login panel if not
-    logged_in = core.login.login_from_cache(classes, classes_login)
+    for cls in classes:
+        bpy.utils.register_class(cls)
 
-    # Register classes
-    if logged_in:
-        for cls in classes:
-            bpy.utils.register_class(cls)
-    else:
-        for cls in classes_login:
-            bpy.utils.register_class(cls)
     for cls in classes_always_enable:
         bpy.utils.register_class(cls)
 
