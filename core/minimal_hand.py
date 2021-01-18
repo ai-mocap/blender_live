@@ -288,6 +288,8 @@ def process_bones(frame_idx, frame_coords):
     obj.rotation_mode = "QUATERNION"
     obj.rotation_quaternion = coords["root"]
     # obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
+    print(frame_coords)
+    print(coords_raw)
 
     for joint_name, bone_quat in list(coords.items())[1:]:
         print(joint_name, bone_quat)
