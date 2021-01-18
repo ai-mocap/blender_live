@@ -1,7 +1,6 @@
 import bpy
 import datetime
 
-from .. import updater, updater_ops
 from ..core import animations
 from ..core import recorder as recorder_manager
 from ..core import receiver as receiver_cls
@@ -12,11 +11,11 @@ row_scale = 0.75
 paired_inputs = {}
 
 
-# Initializes the Rokoko panel in the toolbar
+# Initializes the CPTR panel in the toolbar
 class ToolPanel(object):
-    bl_label = 'Rokoko'
-    bl_idname = 'VIEW3D_TS_rokoko'
-    bl_category = 'Rokoko'
+    bl_label = 'CPTR'
+    bl_idname = 'VIEW3D_TS_cptr'
+    bl_category = 'CPTR'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
 
@@ -28,18 +27,14 @@ def separator(layout, scale=1):
     row.label(text='')
 
 
-# Main panel of the Rokoko panel
+# Main panel of the CPTR panel
 class ReceiverPanel(ToolPanel, bpy.types.Panel):
     bl_idname = 'VIEW3D_PT_rsl_receiver_v2'
-    bl_label = 'Rokoko Studio Live'
+    bl_label = 'CPTR Blender Plugin'
 
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = False
-
-        # box = layout.box()
-        updater.check_for_update_background(check_on_startup=True)
-        updater_ops.draw_update_notification_panel(layout)
 
         col = layout.column()
 
@@ -47,23 +42,6 @@ class ReceiverPanel(ToolPanel, bpy.types.Panel):
         row.label(text='Port:')
         row.enabled = not receiver.receiver_enabled
         row.prop(context.scene, 'rsl_receiver_port', text='')
-
-        # row = col.row(align=True)
-        # row.label(text='FPS:')
-        # row.enabled = not receiver.receiver_enabled
-        # row.prop(context.scene, 'rsl_receiver_fps', text='')
-
-        row = col.row(align=True)
-        row.label(text='Scene Scale:')
-        row.prop(context.scene, 'rsl_scene_scaling', text='')
-
-        layout.separator()
-
-        row = layout.row(align=True)
-        row.prop(context.scene, 'rsl_reset_scene_on_stop')
-
-        row = layout.row(align=True)
-        row.prop(context.scene, 'rsl_hide_mesh_during_play')
 
         row = layout.row(align=True)
         row.scale_y = 1.3

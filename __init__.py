@@ -26,41 +26,15 @@ else:
     importlib.reload(panels)
     importlib.reload(operators)
     importlib.reload(properties)
-    importlib.reload(updater_ops)
 
 
 # List of all buttons and panels
 classes = [
     panels.main.ReceiverPanel,
-    panels.objects.ObjectsPanel,
-    panels.command_api.CommandPanel,
-    panels.retargeting.RetargetingPanel,
     operators.receiver.ReceiverStart,
     operators.receiver.ReceiverStop,
     operators.recorder.RecorderStart,
     operators.recorder.RecorderStop,
-    operators.detector.DetectFaceShapes,
-    operators.detector.DetectActorBones,
-    operators.detector.SaveCustomShapes,
-    operators.detector.SaveCustomBones,
-    operators.detector.SaveCustomBonesRetargeting,
-    operators.detector.ImportCustomBones,
-    operators.detector.ExportCustomBones,
-    operators.detector.ClearCustomBones,
-    operators.detector.ClearCustomShapes,
-    operators.actor.InitTPose,
-    operators.actor.ResetTPose,
-    operators.actor.PrintCurrentPose,
-    operators.command_api.CommandTest,
-    operators.command_api.StartCalibration,
-    operators.command_api.Restart,
-    operators.command_api.StartRecording,
-    operators.command_api.StopRecording,
-    operators.retargeting.BuildBoneList,
-    operators.retargeting.ClearBoneList,
-    operators.retargeting.RetargetAnimation,
-    panels.retargeting.RSL_UL_BoneList,
-    panels.retargeting.BoneListItem,
 ]
 
 

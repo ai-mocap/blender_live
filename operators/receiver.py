@@ -15,7 +15,7 @@ receiver_enabled = False
 class ReceiverStart(bpy.types.Operator):
     bl_idname = "rsl.receiver_start"
     bl_label = "Start Receiver"
-    bl_description = "Start receiving data from Rokoko Studio"
+    bl_description = "Start receiving data from cptr.tech"
     bl_options = {'INTERNAL'}
 
     def modal(self, context, event):
@@ -91,7 +91,7 @@ def load_scene_later():
 class ReceiverStop(bpy.types.Operator):
     bl_idname = "rsl.receiver_stop"
     bl_label = "Stop Receiver"
-    bl_description = "Stop receiving data from Rokoko Studio"
+    bl_description = "Stop receiving data from cptr.tech"
     bl_options = {'INTERNAL'}
 
     def execute(self, context):

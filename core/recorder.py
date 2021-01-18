@@ -18,6 +18,7 @@ def toggle_recording(self, context):
 
 
 def start_recorder(context):
+    print('start recording')
     if recorded_data:
         return
     # Here can be stuff done when starting the recorder

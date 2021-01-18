@@ -72,7 +72,7 @@ class Receiver:
             return ['Wrong data format!', 'Use JSON v2 or higher!'], True
         except KeyError as e:
             print('KeyError:', e)
-            return ['Incompatible JSON version!', 'Use the latest Studio', 'and plugin versions.'], True
+            return ['Incompatible JSON version!', 'Use the latest versions.'], True
         finally:
             self.data_list = []
 
@@ -176,7 +176,7 @@ class Receiver:
         global show_error
         show_error = False
 
-        print("Rokoko Studio Live started listening on port " + str(port))
+        print("CPTR started listening on port " + str(port))
 
     async def async_stop(self):
         await self.app.shutdown()

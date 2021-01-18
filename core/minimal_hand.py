@@ -134,14 +134,6 @@ mano_joints = [
     "thumb_tip",
 ]
 
-'''
-    "thumb_tip",
-    "point_tip",
-    "ring_tip",
-    "pinky_tip",
-    "middle_tip",
-]'''
-
 
 def map_coords(coords_raw, mode="mano"):
     if mode == "mano":
@@ -288,11 +280,8 @@ def process_bones(frame_idx, frame_coords):
     obj.rotation_mode = "QUATERNION"
     obj.rotation_quaternion = coords["root"]
     # obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
-    print(frame_coords)
-    print(coords_raw)
 
     for joint_name, bone_quat in list(coords.items())[1:]:
-        print(joint_name, bone_quat)
         obj = bpy.data.objects["right_Skeleton"].pose.bones["right_" + joint_name]
         obj.rotation_mode = "QUATERNION"
         obj.rotation_quaternion = bone_quat.normalized()  # joint_coords

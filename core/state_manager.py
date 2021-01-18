@@ -32,6 +32,7 @@ def load_scene():
 
 # Object handler
 def save_object(obj):
+    print(obj.name)
     if obj.rsl_animations_props_trackers == 'None':
         return
 

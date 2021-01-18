@@ -1,29 +1,10 @@
 from bpy.types import Scene, Object
 from bpy.props import IntProperty, StringProperty, EnumProperty, BoolProperty, FloatProperty, CollectionProperty, PointerProperty
 
-from .core import animation_lists, state_manager, recorder, retargeting, login
-from .panels import retargeting as retargeting_ui
+from .core import animation_lists, state_manager, recorder
 
 
 def register():
-    # Login
-    Scene.rsl_login_email = StringProperty(
-        name='Email',
-        description='Input the email address of your Rokoko account',
-        update=login.credentials_update
-    )
-    Scene.rsl_login_password = StringProperty(
-        name='Password',
-        description='Input the password of your Rokoko account',
-        subtype='PASSWORD',
-        update=login.credentials_update
-    )
-    Scene.rsl_login_password_shown = StringProperty(
-        name='Password',
-        description='Input the password of your Rokoko account',
-        update=login.credentials_update
-    )
-
     # Receiver
     Scene.rsl_receiver_port = IntProperty(
         name='Streaming Port',
@@ -67,66 +48,7 @@ def register():
         update=recorder.toggle_recording
     )
 
-    # Command API
-    Scene.rsl_command_ip_address = StringProperty(
-        name='IP Address',
-        description='Input the IP address of Rokoko Studio',
-        default='127.0.0.1',
-        maxlen=15
-    )
-    Scene.rsl_command_ip_port = IntProperty(
-        name='Command API Port',
-        description="The port defined in Rokoko Studio",
-        default=14053,
-        min=1,
-        max=65535
-    )
-    Scene.rsl_command_api_key = StringProperty(
-        name='API Key',
-        description='Input the API key displayed in Rokoko Studio',
-        default='1234',
-        maxlen=15
-    )
-
-    # Retargeting
-    Scene.rsl_retargeting_armature_source = PointerProperty(
-        name='Source',
-        description='Select the armature with the animation that you want to retarget',
-        type=Object,
-        poll=retargeting.poll_source_armatures,
-        update=retargeting.clear_bone_list
-    )
-    Scene.rsl_retargeting_armature_target = PointerProperty(
-        name='Target',
-        description='Select the armature that should receive the animation',
-        type=Object,
-        poll=retargeting.poll_target_armatures,
-        update=retargeting.clear_bone_list
-    )
-    Scene.rsl_retargeting_auto_scaling = BoolProperty(
-        name='Auto Scale',
-        description='This will scale the source armature to fit the height of the target armature.'
-                    '\nBoth armatures have to be in T-pose for this to work correctly',
-        default=True
-    )
-    Scene.rsl_retargeting_use_pose = EnumProperty(
-        name="Use Pose",
-        description='Select which pose of the source and target armature to use to retarget the animation.'
-                    '\nBoth armatures should be in the same pose before retargeting',
-        items=[
-            ("REST", "Rest", "Select this to use the rest pose during retargeting."),
-            ("CURRENT", "Current", "Select this to use the current pose during retargeting.")
-        ]
-    )
-    Scene.rsl_retargeting_bone_list = CollectionProperty(
-        type=retargeting_ui.BoneListItem
-    )
-    Scene.rsl_retargeting_bone_list_index = IntProperty(
-        name="Index for the retargeting bone list",
-        default=0
-    )
-
-    # Objects
+# Objects
     Object.rsl_animations_props_trackers = EnumProperty(
         name='Tracker or Prop',
         description='Select the prop or tracker that you want to attach this object to',
