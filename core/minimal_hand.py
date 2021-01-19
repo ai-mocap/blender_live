@@ -126,7 +126,6 @@ mano_joints = [
     "thumb1",
     "thumb2",
     "thumb3",
-
     "point_tip",
     "middle_tip",
     "pinky_tip",
