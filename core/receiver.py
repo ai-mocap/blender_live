@@ -60,7 +60,7 @@ class Receiver:
             for data_raw in self.data_list:
                 data = json.loads(data_raw)
                 print(data)
-                minimal_hand.process_bones(self.line_no, data['hands'][0]['tetha'])
+                minimal_hand.process_bones(self.line_no, data['hands'][0]['theta'])
                 minimal_hand.process_xyz(self.line_no, data['hands'][0]['xyz'])
                 self.line_no += 1
         except ValueError as exc:
