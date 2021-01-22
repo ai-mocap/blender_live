@@ -188,13 +188,6 @@ bones = [
     ("pinky3", "pinky_tip"),
 ]
 
-right_hand = '/home/nb/Downloads/data(2).jsonl'
-left_hand = None  # "/home/gleb/code/jupyter/hands_estim/left_hand_frames.txt"
-
-
-right_hand_model = None
-left_hand_model = None
-
 
 initial_coords = '''-0.4783496546203587,0.03191714428730719,0.030931526400675972
 -0.03786342141938446,0.005915358945289405,0.13436147158616243
@@ -235,56 +228,58 @@ def init():
     coords_raw = np.array(
         [[float(coord) for coord in s.split(",")] for s in initial_coords.split("\n")]
     )
-    print(coords_raw)
 
-    if right_hand_model is not None:
-        bpy.ops.import_scene.obj(filepath=right_hand_model)
-        obj_object = bpy.context.selected_objects[0]
-        obj_object.rotation_euler.rotate_axis("X", math.radians(-90))
-        obj_object.name = "right_hand_mesh"
-        bpy.ops.object.shade_smooth()
-        obj_object.location.x -= coords_raw[0, 0]
-        obj_object.location.y -= coords_raw[0, 1]
-        obj_object.location.z -= coords_raw[0, 2]
-        bpy.ops.object.origin_set(type="ORIGIN_CURSOR", center="MEDIAN")
+    # if right_hand_model is not None:
+    #     bpy.ops.import_scene.obj(filepath=right_hand_model)
+    #     obj_object = bpy.context.selected_objects[0]
+    #     obj_object.rotation_euler.rotate_axis("X", math.radians(-90))
+    #     obj_object.name = "right_hand_mesh"
+    #     bpy.ops.object.shade_smooth()
+    #     obj_object.location.x -= coords_raw[0, 0]
+    #     obj_object.location.y -= coords_raw[0, 1]
+    #     obj_object.location.z -= coords_raw[0, 2]
+    #     bpy.ops.object.origin_set(type="ORIGIN_CURSOR", center="MEDIAN")
 
     coords_raw -= coords_raw[0]
     coords = map_coords(coords_raw, "mano")
     setup_joints(coords.keys(), prefix="right_", mode="root")
     create_bones(bones, coords, prefix="right_")
 
-    if right_hand_model is not None:
-        bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.object.select_all(action="DESELECT")
-        obj = bpy.data.objects["right_hand_mesh"]
-        armature = bpy.data.objects["right_Skeleton"]
-        obj.select_set(True)
-        armature.select_set(True)
-        for b in armature.pose.bones:
-            b.bone.select = True
-        bpy.context.view_layer.objects.active = (
-            armature  # the active object will be the parent of all selected object
-        )
-        bpy.ops.object.parent_set(type="ARMATURE_AUTO", keep_transform=True)
+    # if right_hand_model is not None:
+    #     bpy.ops.object.mode_set(mode="OBJECT")
+    #     bpy.ops.object.select_all(action="DESELECT")
+    #     obj = bpy.data.objects["right_hand_mesh"]
+    #     armature = bpy.data.objects["right_Skeleton"]
+    #     obj.select_set(True)
+    #     armature.select_set(True)
+    #     for b in armature.pose.bones:
+    #         b.bone.select = True
+    #     bpy.context.view_layer.objects.active = (
+    #         armature  # the active object will be the parent of all selected object
+    #     )
+    #     bpy.ops.object.parent_set(type="ARMATURE_AUTO", keep_transform=True)
 
 
 def process_bones(frame_idx, frame_coords):
     coords_raw = [Quaternion(quat) for quat in frame_coords]
     coords = map_coords(coords_raw, "quat_mano")
-
-    # bpy.context.scene.frame_set(frame_idx)
-    # bpy.data.scenes["Scene"].frame_end = frame_idx + 1
+    print(bpy.context.scene.rsl_recording)
+    if bpy.context.scene.rsl_recording:
+        bpy.context.scene.frame_set(frame_idx)
+        bpy.data.scenes["Scene"].frame_end = frame_idx + 1
 
     obj = bpy.data.objects["right_root"]
     obj.rotation_mode = "QUATERNION"
     obj.rotation_quaternion = coords["root"]
-    # obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
+    if bpy.context.scene.rsl_recording:
+        obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
 
     for joint_name, bone_quat in list(coords.items())[1:]:
         obj = bpy.data.objects["right_Skeleton"].pose.bones["right_" + joint_name]
         obj.rotation_mode = "QUATERNION"
         obj.rotation_quaternion = bone_quat.normalized()  # joint_coords
-        # obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
+        if bpy.context.scene.rsl_recording:
+            obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
 
 
 def add_joint(name, location):

@@ -26,17 +26,22 @@ def start_recorder(context):
 
 
 def stop_recorder(context):
+    print('processing recorded data')
     if not recorded_data:
+        print('no recorded data')
         return
 
     # Set animation settings
     context.scene.render.fps = context.scene.rsl_receiver_fps
+    print('settings set')
 
     # Convert timestamps to keyframes to have a shared time axis
     convert_timestamps_to_keyframes()
+    print('timestamps converted')
 
     # Process each type of recorded data
-    for data_type, objects in recorded_data.items():
+    for idx, (data_type, objects) in enumerate(recorded_data.items()):
+        print(idx, len(recorded_data), data_type)
         if not objects:
             continue
 

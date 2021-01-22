@@ -1,6 +1,8 @@
 import bpy
 import asyncio
 import json
+from datetime import datetime
+import math
 
 from . import animations, utils, minimal_hand
 
@@ -59,10 +61,16 @@ class Receiver:
         try:
             for data_raw in self.data_list:
                 data = json.loads(data_raw)
-                print(data)
-                minimal_hand.process_bones(self.line_no, data['hands'][0]['theta'])
-                minimal_hand.process_xyz(self.line_no, data['hands'][0]['xyz'])
-                self.line_no += 1
+                pt = datetime.fromisoformat(data['ts'])
+                current_timestamp = math.floor((pt.microsecond / 1000000 + pt.second + pt.minute * 60 + pt.hour * 3600) * 100)
+                if self.prev_timestamp is not None:
+                    timestamp_delta = current_timestamp - self.prev_timestamp
+                else:
+                    timestamp_delta = 0
+                frame_idx = bpy.context.scene.frame_current + timestamp_delta
+                minimal_hand.process_bones(frame_idx, data['hands'][0]['theta'])
+                self.prev_timestamp = current_timestamp
+                print(timestamp_delta, current_timestamp, self.prev_timestamp, data['ts'])
         except ValueError as exc:
             print('Packet contained no data', exc)
             return ['Packets contain no data!'], False
@@ -135,7 +143,7 @@ class Receiver:
         async for msg in ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
                 self.data_list.append(msg.data)
-                print(f'ws message appended to datalist, new size={len(self.data_list)}')
+                #print(f'ws message appended to datalist, new size={len(self.data_list)}')
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 print('ws connection closed with exception %s' % ws.exception())
 
@@ -161,7 +169,7 @@ class Receiver:
         print('started')
         minimal_hand.init()
         self.loop = asyncio.get_event_loop()
-        self.line_no = 0
+        self.prev_timestamp = 0
         self.data_list = []
         self.loop.create_task(self.run_websocket_server())
         self.loop.stop()
