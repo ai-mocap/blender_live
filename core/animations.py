@@ -29,7 +29,7 @@ def animate():
 
 
 def animate_tracker_prop(obj):
-    if not obj.rsl_animations_props_trackers or obj.rsl_animations_props_trackers == 'None':
+    if not obj.cptr_animations_props_trackers or obj.cptr_animations_props_trackers == 'None':
         return
 
     # Get prop
@@ -38,9 +38,9 @@ def animate_tracker_prop(obj):
         return
 
     # Get the scene scaling
-    scene_scale = bpy.context.scene.rsl_scene_scaling
-    if obj.rsl_use_custom_scale:
-        scene_scale = obj.rsl_custom_scene_scale
+    scene_scale = bpy.context.scene.cptr_scene_scaling
+    if obj.cptr_use_custom_scale:
+        scene_scale = obj.cptr_custom_scene_scale
 
     # Set the transforms of the object
     obj.rotation_mode = 'QUATERNION'
@@ -57,14 +57,14 @@ def animate_tracker_prop(obj):
     )
 
     # Record data
-    if bpy.context.scene.rsl_recording:
+    if bpy.context.scene.cptr_recording:
         recorder.record_object(live_data.timestamp, obj.name, obj.rotation_quaternion, obj.location)
 
 
 def animate_face(obj):
     if not hasattr(obj.data, 'shape_keys') or not hasattr(obj.data.shape_keys, 'key_blocks'):
         return
-    if not obj.rsl_animations_faces or obj.rsl_animations_faces == 'None':
+    if not obj.cptr or obj.cptr == 'None':
         return
 
     # Get the face live data
@@ -80,14 +80,14 @@ def animate_face(obj):
             shapekey.slider_min = -1
             shapekey.value = face[shapekey_name] / 100
 
-            if bpy.context.scene.rsl_recording:
+            if bpy.context.scene.cptr_recording:
                 # shapekey.keyframe_insert(data_path='value', group=obj.name)
                 recorder.record_face(live_data.timestamp, obj.name, shapekey_name, shapekey.value)
 
 
 def animate_actor(obj):
     # Return if no actor is assigned to this object
-    if not obj.rsl_animations_actors or obj.rsl_animations_actors == 'None':
+    if not obj.cptr_animations_actors or obj.cptr_animations_actors == 'None':
         return
 
     # Get the actor data assigned to the object
@@ -212,7 +212,7 @@ def animate_actor(obj):
             bone.location = location_new
 
         # Record the data
-        if bpy.context.scene.rsl_recording:
+        if bpy.context.scene.cptr_recording:
             recorder.record_bone(live_data.timestamp, obj.name, bone_name_assigned, bone.rotation_euler, location=bone.location if bone_name == 'hip' else None)
 
 

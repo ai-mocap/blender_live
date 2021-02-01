@@ -29,7 +29,7 @@ def separator(layout, scale=1):
 
 # Main panel of the CPTR panel
 class ReceiverPanel(ToolPanel, bpy.types.Panel):
-    bl_idname = 'VIEW3D_PT_rsl_receiver_v2'
+    bl_idname = 'VIEW3D_PT_cptr_receiver_v2'
     bl_label = 'CPTR Blender Plugin'
 
     def draw(self, context):
@@ -41,7 +41,7 @@ class ReceiverPanel(ToolPanel, bpy.types.Panel):
         row = col.row(align=True)
         row.label(text='Port:')
         row.enabled = not receiver.receiver_enabled
-        row.prop(context.scene, 'rsl_receiver_port', text='')
+        row.prop(context.scene, 'cptr_receiver_port', text='')
 
         row = layout.row(align=True)
         row.scale_y = 1.3
@@ -53,7 +53,7 @@ class ReceiverPanel(ToolPanel, bpy.types.Panel):
         row = layout.row(align=True)
         row.scale_y = 1.3
         row.enabled = receiver.receiver_enabled
-        if not context.scene.rsl_recording:
+        if not context.scene.cptr_recording:
             row.operator(recorder.RecorderStart.bl_idname, icon_value=Icons.START_RECORDING.get_icon())
         else:
             row.operator(recorder.RecorderStop.bl_idname, icon='SNAP_FACE', depress=True)
@@ -93,26 +93,26 @@ def show_connetions_v2(layout):
     for obj in bpy.data.objects:
         # Get paired props and trackers
         if animations.live_data.props or animations.live_data.trackers:
-            if obj.rsl_animations_props_trackers and obj.rsl_animations_props_trackers != 'None':
-                paired = paired_inputs.get(obj.rsl_animations_props_trackers.split('|')[1])
+            if obj.cptr_animations_props_trackers and obj.cptr_animations_props_trackers != 'None':
+                paired = paired_inputs.get(obj.cptr_animations_props_trackers.split('|')[1])
                 if not paired:
-                    paired_inputs[obj.rsl_animations_props_trackers.split('|')[1]] = [obj.name]
+                    paired_inputs[obj.cptr_animations_props_trackers.split('|')[1]] = [obj.name]
                 else:
                     paired.append(obj.name)
 
         # Get paired faces
-        if animations.live_data.faces and obj.rsl_animations_faces and obj.rsl_animations_faces != 'None':
-            paired = paired_inputs.get(obj.rsl_animations_faces)
+        if animations.live_data.faces and obj.cptr and obj.cptr != 'None':
+            paired = paired_inputs.get(obj.cptr)
             if not paired:
-                paired_inputs[obj.rsl_animations_faces] = [obj.name]
+                paired_inputs[obj.cptr] = [obj.name]
             else:
                 paired.append(obj.name)
 
         # Get paired actors
-        if animations.live_data.actors and obj.rsl_animations_actors and obj.rsl_animations_actors != 'None':
-            paired = paired_inputs.get(obj.rsl_animations_actors)
+        if animations.live_data.actors and obj.cptr_animations_actors and obj.cptr_animations_actors != 'None':
+            paired = paired_inputs.get(obj.cptr_animations_actors)
             if not paired:
-                paired_inputs[obj.rsl_animations_actors] = [obj.name]
+                paired_inputs[obj.cptr_animations_actors] = [obj.name]
             else:
                 paired.append(obj.name)
 
@@ -185,7 +185,7 @@ def show_connetions_v3(layout):
 
     for obj in bpy.data.objects:
         # Get props
-        if obj.rsl_animations_props_trackers and obj.rsl_animations_props_trackers != 'None':
+        if obj.cptr_animations_props_trackers and obj.cptr_animations_props_trackers != 'None':
             if animations.live_data.props:
                 prop = animations.live_data.get_prop_by_obj(obj)
                 if prop:
@@ -196,7 +196,7 @@ def show_connetions_v3(layout):
                         paired_inputs[prop_id].append(obj.name)
 
         # Get faces
-        if animations.live_data.faces and obj.rsl_animations_faces and obj.rsl_animations_faces != 'None':
+        if animations.live_data.faces and obj.cptr and obj.cptr != 'None':
             face = animations.live_data.get_face_by_obj(obj)
             if face:
                 face_id = animations.live_data.get_face_id(face)
@@ -206,7 +206,7 @@ def show_connetions_v3(layout):
                     paired_inputs[face_id].append(obj.name)
 
         # Get actors
-        if animations.live_data.actors and obj.rsl_animations_actors and obj.rsl_animations_actors != 'None':
+        if animations.live_data.actors and obj.cptr_animations_actors and obj.cptr_animations_actors != 'None':
             actor = animations.live_data.get_actor_by_obj(obj)
             if actor:
                 actor_id = animations.live_data.get_actor_id(actor)

@@ -68,7 +68,19 @@ class Receiver:
                 else:
                     timestamp_delta = 0
                 frame_idx = bpy.context.scene.frame_current + timestamp_delta
-                minimal_hand.process_bones(frame_idx, data['hands'][0]['theta'])
+                print(data['hands'][0]['label'])
+                if bpy.context.scene.cptr_recording:
+                    bpy.context.scene.frame_set(frame_idx)
+                    bpy.data.scenes["Scene"].frame_end = frame_idx + 1
+                if data['hands']['left'] is not None:
+                    minimal_hand.process_bones(data['hands']['left']['theta'],
+                                               root_position=data['hands']['left']['xyz'][[0]],
+                                               hand='left')  # animate second hand as right
+                if data['hands']['right'] is not None:
+                    minimal_hand.process_bones(data['hands']['right']['theta'],
+                                               root_position=data['hands']['right']['xyz'][[0]],
+                                               hand='right')  # animate second hand as right
+
                 self.prev_timestamp = current_timestamp
                 print(timestamp_delta, current_timestamp, self.prev_timestamp, data['ts'])
         except ValueError as exc:
@@ -93,14 +105,14 @@ class Receiver:
         if received:
             self.i += 1
             self.i_np = 0
-            if self.i % (bpy.context.scene.rsl_receiver_fps * 5) == 0:
+            if self.i % (bpy.context.scene.cptr_receiver_fps * 5) == 0:
                 utils.ui_refresh_properties()
                 utils.ui_refresh_view_3d()
             return
 
         # If receiving a packet after one second of no packets, update UI with next packet
         self.i_np += 1
-        if self.i_np == bpy.context.scene.rsl_receiver_fps:
+        if self.i_np == bpy.context.scene.cptr_receiver_fps:
             self.i = -1
 
     def handle_error(self, error, force_error):
@@ -118,7 +130,7 @@ class Receiver:
         if not self.error_temp:
             self.error_temp = error
             if force_error:
-                self.error_count = bpy.context.scene.rsl_receiver_fps - 1
+                self.error_count = bpy.context.scene.cptr_receiver_fps - 1
             return
 
         if error == self.error_temp:
@@ -126,11 +138,11 @@ class Receiver:
         else:
             self.error_temp = error
             if force_error:
-                self.error_count = bpy.context.scene.rsl_receiver_fps
+                self.error_count = bpy.context.scene.cptr_receiver_fps
             else:
                 self.error_count = 0
 
-        if self.error_count == bpy.context.scene.rsl_receiver_fps:
+        if self.error_count == bpy.context.scene.cptr_receiver_fps:
             show_error = self.error_temp
             utils.ui_refresh_view_3d()
             print('REFRESH')
@@ -141,9 +153,9 @@ class Receiver:
         await ws.prepare(request)
 
         async for msg in ws:
-            if msg.type == aiohttp.WSMsgType.TEXT:
+            if msg.type == aiohttp.WSMsgType.TEXT and self.recieving:
                 self.data_list.append(msg.data)
-                #print(f'ws message appended to datalist, new size={len(self.data_list)}')
+                print(f'ws message appended to datalist, new size={len(self.data_list)}')
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 print('ws connection closed with exception %s' % ws.exception())
 
@@ -180,11 +192,13 @@ class Receiver:
 
         self.error_temp = []
         self.error_count = 0
+        self.recieving = True
 
         global show_error
         show_error = False
 
         print("CPTR started listening on port " + str(port))
+        print(f"Length of queue is {len(self.data_list)}")
 
     async def async_stop(self):
         await self.app.shutdown()
@@ -193,4 +207,5 @@ class Receiver:
     def stop(self):
         print("CPTR stopping")
         self.loop.run_until_complete(self.async_stop())
+        self.recieving = False
         print("CPTR stopped")
