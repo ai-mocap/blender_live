@@ -9,7 +9,7 @@ recorded_timestamps = OrderedDict()
 
 
 def toggle_recording(self, context):
-    new_state = context.scene.rsl_recording
+    new_state = context.scene.cptr_recording
 
     if new_state:
         start_recorder(context)
@@ -18,6 +18,7 @@ def toggle_recording(self, context):
 
 
 def start_recorder(context):
+    print('start recording')
     if recorded_data:
         return
     # Here can be stuff done when starting the recorder
@@ -25,17 +26,22 @@ def start_recorder(context):
 
 
 def stop_recorder(context):
+    print('processing recorded data')
     if not recorded_data:
+        print('no recorded data')
         return
 
     # Set animation settings
-    context.scene.render.fps = context.scene.rsl_receiver_fps
+    context.scene.render.fps = context.scene.cptr_receiver_fps
+    print('settings set')
 
     # Convert timestamps to keyframes to have a shared time axis
     convert_timestamps_to_keyframes()
+    print('timestamps converted')
 
     # Process each type of recorded data
-    for data_type, objects in recorded_data.items():
+    for idx, (data_type, objects) in enumerate(recorded_data.items()):
+        print(idx, len(recorded_data), data_type)
         if not objects:
             continue
 
@@ -252,7 +258,7 @@ def convert_timestamps_to_keyframes():
     timestamps = list(recorded_timestamps.keys())
 
     def get_frame(frame_number):
-        return int(round((timestamps[frame_number] - timestamps[0]) * bpy.context.scene.rsl_receiver_fps, 0))
+        return int(round((timestamps[frame_number] - timestamps[0]) * bpy.context.scene.cptr_receiver_fps, 0))
 
     # Fix frame numbers that are incorrect because of rounding errors
     for i, timestamp in enumerate(timestamps):

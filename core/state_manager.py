@@ -32,7 +32,8 @@ def load_scene():
 
 # Object handler
 def save_object(obj):
-    if obj.rsl_animations_props_trackers == 'None':
+    print(obj.name)
+    if obj.cptr_animations_props_trackers == 'None':
         return
 
     global objects
@@ -47,7 +48,7 @@ def save_object(obj):
 
 
 def load_object(obj):
-    if not bpy.context.scene.rsl_reset_scene_on_stop:
+    if not bpy.context.scene.cptr_reset_scene_on_stop:
         return
 
     global objects
@@ -70,7 +71,7 @@ def load_object(obj):
 def save_face(obj):
     if not hasattr(obj.data, 'shape_keys') or not hasattr(obj.data.shape_keys, 'key_blocks'):
         return
-    if obj.rsl_animations_faces == 'None':
+    if obj.cptr == 'None':
         return
 
     global faces
@@ -86,7 +87,7 @@ def save_face(obj):
 
 
 def load_face(obj):
-    if not bpy.context.scene.rsl_reset_scene_on_stop:
+    if not bpy.context.scene.cptr_reset_scene_on_stop:
         return
 
     global faces
@@ -105,7 +106,7 @@ def load_face(obj):
     faces.pop(obj.name)
 
     # Hide this mesh if it is animated by an armature and it should be hidden
-    if bpy.context.scene.rsl_hide_mesh_during_play:
+    if bpy.context.scene.cptr_hide_mesh_during_play:
         for mod in obj.modifiers:
             if mod.type == 'ARMATURE':
                 armature = mod.object
@@ -119,8 +120,8 @@ def save_armature(obj):
 
     # Return if no actor and no glove is assigned to this armature
     # if not obj.rsl_animations_actors or obj.rsl_animations_actors == 'None':  # <-- This should work but for some reason it doesn't
-    if obj.rsl_animations_actors == 'None':
-        print('NO ASSIGNED DATA:', obj.rsl_animations_actors)
+    if obj.cptr_animations_actors == 'None':
+        print('NO ASSIGNED DATA:', obj.cptr_animations_actors)
         return
 
     bones = {}
@@ -145,7 +146,7 @@ def save_armature(obj):
 def load_armature(obj):
     unhide_meshes_on_stop(obj)
 
-    if not bpy.context.scene.rsl_reset_scene_on_stop:
+    if not bpy.context.scene.cptr_reset_scene_on_stop:
         return
 
     global armatures
@@ -181,7 +182,7 @@ def update_object(self, context):
         return
 
     obj = context.object
-    new_state = obj.rsl_animations_props_trackers
+    new_state = obj.cptr_animations_props_trackers
 
     if new_state != 'None':
         if not objects.get(obj.name):
@@ -195,7 +196,7 @@ def update_face(self, context):
         return
 
     obj = context.object
-    new_state = obj.rsl_animations_faces
+    new_state = obj.cptr
 
     if new_state != 'None':
         if not faces.get(obj.name):
@@ -209,7 +210,7 @@ def update_actor(self, context):
         return
 
     obj = context.object
-    new_state = obj.rsl_animations_actors
+    new_state = obj.cptr_animations_actors
 
     if new_state != 'None':
         if not armatures.get(obj.name):
@@ -233,7 +234,7 @@ def update_glove(self, context):
 
 
 def hide_meshes_on_play(armature):
-    if not bpy.context.scene.rsl_hide_mesh_during_play:
+    if not bpy.context.scene.cptr_hide_mesh_during_play:
         return
 
     global faces
@@ -256,7 +257,7 @@ def update_hidden_meshes(self, context):
     if not receiver.receiver_enabled:
         return
 
-    new_state = context.scene.rsl_hide_mesh_during_play
+    new_state = context.scene.cptr_hide_mesh_during_play
 
     for armature_name in armatures.keys():
         armature = bpy.context.scene.objects.get(armature_name)

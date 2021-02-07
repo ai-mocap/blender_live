@@ -126,21 +126,12 @@ mano_joints = [
     "thumb1",
     "thumb2",
     "thumb3",
-
     "point_tip",
     "middle_tip",
     "pinky_tip",
-    "thumb_tip",
     "ring_tip",
+    "thumb_tip",
 ]
-
-'''
-    "thumb_tip",
-    "point_tip",
-    "ring_tip",
-    "pinky_tip",
-    "middle_tip",
-]'''
 
 
 def map_coords(coords_raw, mode="mano"):
@@ -197,35 +188,50 @@ bones = [
     ("pinky3", "pinky_tip"),
 ]
 
-right_hand = '/home/nb/Downloads/data(2).jsonl'
-left_hand = None  # "/home/gleb/code/jupyter/hands_estim/left_hand_frames.txt"
 
-
-right_hand_model = None
-left_hand_model = None
-
-
-initial_coords = '''-0.47834965462035883,0.03191714428730719,0.030931526400675976
--0.03786342141938444,0.005915358945289404,0.13436147158616238
-0.12553109615003877,0.025962135992213906,0.14544681214135052
-0.23631065758495548,0.01947002312635445,0.14487622834520344
--0.005047447661171351,0.024522327532591325,0.014143822329090882
-0.15086591426201523,0.03382897012449566,-0.013828720260797645
-0.265389115431465,0.027568448960906548,-0.03355129027447742
--0.13441479432093822,-0.01778449981493586,-0.18511518361574889
+initial_coords_left = '''-0.4783496546203587,0.03191714428730719,0.030931526400675972
+-0.03786342141938446,0.005915358945289405,0.13436147158616243
+0.1255310961500387,0.025962135992213912,0.14544681214135052
+0.23631065758495548,0.019470023126354465,0.14487622834520336
+-0.005047447661171345,0.02452232753259131,0.014143822329090873
+0.1508659142620152,0.03382897012449566,-0.013828720260797647
+0.265389115431465,0.027568448960906544,-0.033551290274477424
+-0.13441479432093825,-0.017784499814935864,-0.18511518361574883
 -0.049342753632412834,-0.017475376230939584,-0.24760905845155753
-0.02999175240127676,-0.02093115570317769,-0.2992685954631087
--0.06967188247630757,0.012130038522980974,-0.102434438764765
-0.07189949253375615,0.022465074814577282,-0.12792713127502736
-0.1895020569179099,0.014024515690500663,-0.16609620213687365
--0.3579011206071486,-0.045694528422071334,0.15999576284108968
--0.25973491790076153,-0.04123809566435632,0.2784935290707612
--0.14864622114082907,-0.06840295147164335,0.35111412056743946
+0.029991752401276762,-0.020931155703177683,-0.29926859546310863
+-0.06967188247630755,0.012130038522980974,-0.102434438764765
+0.07189949253375615,0.02246507481457729,-0.12792713127502736
+0.18950205691790983,0.014024515690500667,-0.16609620213687365
+-0.3579011206071486,-0.04569452842207133,0.15999576284108968
+-0.2597349179007616,-0.041238095664356295,0.2784935290707611
+-0.14864622114082912,-0.06840295147164337,0.35111412056743946
 0.36192861897365536,0.014762026377023054,0.1383111690011094
 0.394964106550951,0.03073324480070758,-0.06020430519157401
 0.11843697978416388,-0.027646602997179616,-0.3489420729135565
 0.31245949008995283,0.012134281290065078,-0.20334635476466528
 -0.018578491307083174,-0.08179516657237615,0.47052484822976226'''
+
+initial_coords_right = '''0.4783496546203587,0.03191714428730719,0.030931526400675972
+0.03786342141938446,0.005915358945289405,0.13436147158616243
+-0.1255310961500387,0.025962135992213912,0.14544681214135052
+-0.23631065758495548,0.019470023126354465,0.14487622834520336
+0.005047447661171345,0.02452232753259131,0.014143822329090873
+-0.1508659142620152,0.03382897012449566,-0.013828720260797647
+-0.265389115431465,0.027568448960906544,-0.033551290274477424
+0.13441479432093825,-0.017784499814935864,-0.18511518361574883
+0.049342753632412834,-0.017475376230939584,-0.24760905845155753
+-0.029991752401276762,-0.020931155703177683,-0.29926859546310863
+0.06967188247630755,0.012130038522980974,-0.102434438764765
+-0.07189949253375615,0.02246507481457729,-0.12792713127502736
+-0.18950205691790983,0.014024515690500667,-0.16609620213687365
+0.3579011206071486,-0.04569452842207133,0.15999576284108968
+0.2597349179007616,-0.041238095664356295,0.2784935290707611
+0.14864622114082912,-0.06840295147164337,0.35111412056743946
+-0.36192861897365536,0.014762026377023054,0.1383111690011094
+-0.394964106550951,0.03073324480070758,-0.06020430519157401
+-0.11843697978416388,-0.027646602997179616,-0.3489420729135565
+-0.31245949008995283,0.012134281290065078,-0.20334635476466528
+0.018578491307083174,-0.08179516657237615,0.47052484822976226'''
 
 
 def init():
@@ -234,65 +240,63 @@ def init():
 
     if bpy.context.object and bpy.context.object.mode != "OBJECT":
         bpy.ops.object.mode_set(mode="OBJECT")
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete()
+    if not bpy.context.scene.objects.get("left_root"):
+        bpy.ops.object.select_all(action="SELECT")
+        bpy.ops.object.delete()
 
-    for ob in obs:
-        if ob.type == "CAMERA":
-            ob.select_set(False)
+        for ob in obs:
+            if ob.type == "CAMERA":
+                ob.select_set(False)
 
-    coords_raw = np.array(
-        [[float(coord) for coord in s.split(",")] for s in initial_coords.split("\n")]
-    )
-
-    if right_hand_model is not None:
-        bpy.ops.import_scene.obj(filepath=right_hand_model)
-        obj_object = bpy.context.selected_objects[0]
-        obj_object.rotation_euler.rotate_axis("X", math.radians(-90))
-        obj_object.name = "right_hand_mesh"
-        bpy.ops.object.shade_smooth()
-        obj_object.location.x -= coords_raw[0, 0]
-        obj_object.location.y -= coords_raw[0, 1]
-        obj_object.location.z -= coords_raw[0, 2]
-        bpy.ops.object.origin_set(type="ORIGIN_CURSOR", center="MEDIAN")
-
-    coords_raw -= coords_raw[0]
-    coords = map_coords(coords_raw, "mano")
-    setup_joints(coords.keys(), prefix="right_", mode="root")
-    create_bones(bones, coords, prefix="right_")
-
-    if right_hand_model is not None:
-        bpy.ops.object.mode_set(mode="OBJECT")
-        bpy.ops.object.select_all(action="DESELECT")
-        obj = bpy.data.objects["right_hand_mesh"]
-        armature = bpy.data.objects["right_Skeleton"]
-        obj.select_set(True)
-        armature.select_set(True)
-        for b in armature.pose.bones:
-            b.bone.select = True
-        bpy.context.view_layer.objects.active = (
-            armature  # the active object will be the parent of all selected object
+        coords_raw_left = np.array(
+            [[float(coord) for coord in s.split(",")] for s in initial_coords_left.split("\n")]
         )
-        bpy.ops.object.parent_set(type="ARMATURE_AUTO", keep_transform=True)
+
+        coords_raw_right = np.array(
+            [[float(coord) for coord in s.split(",")] for s in initial_coords_right.split("\n")]
+        )
+
+        coords_raw_left -= coords_raw_left[0]
+        coords_left = map_coords(coords_raw_left, "mano")
+        setup_joints(coords_left.keys(), prefix="left_", mode="root")
+        create_bones(bones, coords_left, prefix="left_")
+
+        coords_raw_right -= coords_raw_right[0]
+        coords_right = map_coords(coords_raw_right, "mano")
+        setup_joints(coords_right.keys(), prefix="right_", mode="root")
+        create_bones(bones, coords_right, prefix="right_")
 
 
-def process_bones(frame_idx, frame_coords):
+def process_bones(frame_coords: np.ndarray, root_position: np.ndarray = None, hand: str = 'left'):
+    """
+    Assign quaternions to the bones, writes keyframes if cptr_recording is true to frame_idx position
+    :param frame_coords: quaternion array, (21, 4)
+    :type frame_coords: np.ndarray
+    :param root_position: root coordinate, (1, 3)
+    :type root_position: np.ndarray
+    :param hand: 'left' or 'right' hand to be processed
+    :type hand: str
+    """
+    assert hand in ['right', 'left'], "Hand should be 'right' or 'left'"
+
     coords_raw = [Quaternion(quat) for quat in frame_coords]
     coords = map_coords(coords_raw, "quat_mano")
 
-    # bpy.context.scene.frame_set(frame_idx)
-    # bpy.data.scenes["Scene"].frame_end = frame_idx + 1
-
-    obj = bpy.data.objects["right_root"]
+    obj = bpy.data.objects[f"{hand}_root"]
     obj.rotation_mode = "QUATERNION"
     obj.rotation_quaternion = coords["root"]
-    # obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
+    if root_position is not None:
+        obj.location = root_position
+    if bpy.context.scene.cptr_recording:
+        obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
+        obj.keyframe_insert(data_path="location", index=-1)
 
     for joint_name, bone_quat in list(coords.items())[1:]:
-        obj = bpy.data.objects["right_Skeleton"].pose.bones["right_" + joint_name]
+        obj = bpy.data.objects[f"{hand}_Skeleton"].pose.bones[hand + "_" + joint_name]
         obj.rotation_mode = "QUATERNION"
-        obj.rotation_quaternion = bone_quat.normalized()  # joint_coords
-        # obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
+        obj.rotation_quaternion = bone_quat.normalized()
+        if bpy.context.scene.cptr_recording:
+            obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
 
 
 def add_joint(name, location):

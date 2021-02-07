@@ -13,9 +13,9 @@ receiver_enabled = False
 
 
 class ReceiverStart(bpy.types.Operator):
-    bl_idname = "rsl.receiver_start"
+    bl_idname = "cptr.receiver_start"
     bl_label = "Start Receiver"
-    bl_description = "Start receiving data from Rokoko Studio"
+    bl_description = "Start receiving data from cptr.tech"
     bl_options = {'INTERNAL'}
 
     def modal(self, context, event):
@@ -37,7 +37,7 @@ class ReceiverStart(bpy.types.Operator):
 
         # Start the receiver
         try:
-            receiver.start(context.scene.rsl_receiver_port)
+            receiver.start(context.scene.cptr_receiver_port)
         except OSError as e:
             print('Socket error:', e.strerror)
             self.report({'ERROR'}, 'This port is already in use!')
@@ -57,7 +57,7 @@ class ReceiverStart(bpy.types.Operator):
 
         # Register this classes modal operator in Blenders event handling system and execute it at the specified fps
         context.window_manager.modal_handler_add(self)
-        timer = context.window_manager.event_timer_add(1 / context.scene.rsl_receiver_fps, window=bpy.context.window)
+        timer = context.window_manager.event_timer_add(1 / context.scene.cptr_receiver_fps, window=bpy.context.window)
         return {'RUNNING_MODAL'}
 
     def cancel(self, context):
@@ -75,8 +75,8 @@ class ReceiverStart(bpy.types.Operator):
         bpy.context.window_manager.event_timer_remove(timer)
 
         # If the recording is still running, let it load the scene afterwards with a delay
-        if bpy.context.scene.rsl_recording:
-            bpy.context.scene.rsl_recording = False
+        if bpy.context.scene.cptr_recording:
+            bpy.context.scene.cptr_recording = False
             thread = Thread(target=load_scene_later, args=[])
             thread.start()
         else:
@@ -89,9 +89,9 @@ def load_scene_later():
 
 
 class ReceiverStop(bpy.types.Operator):
-    bl_idname = "rsl.receiver_stop"
+    bl_idname = "cptr.receiver_stop"
     bl_label = "Stop Receiver"
-    bl_description = "Stop receiving data from Rokoko Studio"
+    bl_description = "Stop receiving data from cptr.tech"
     bl_options = {'INTERNAL'}
 
     def execute(self, context):

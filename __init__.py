@@ -1,16 +1,14 @@
 # Important plugin info for Blender
 bl_info = {
-    'name': 'Rokoko Studio Live for Blender',
-    'author': 'Rokoko Electronics ApS',
+    'name': 'CPTR plugin for Blender',
+    'author': 'CPTR TECH',
     'category': 'Animation',
-    'location': 'View 3D > Tool Shelf > Rokoko',
-    'description': 'Stream your Rokoko Studio animations directly into Blender',
-    'version': (1, 2, 1),
+    'location': 'View 3D > Tool Shelf > CPTR',
+    'description': 'Realtime view and record your data from cptr.tech',
+    'version': (0, 0, 1),
     'blender': (2, 80, 0),
-    'wiki_url': 'https://rokoko.freshdesk.com/support/solutions/folders/47000761699',
+    'wiki_url': 'https://cptr.tech/',
 }
-
-beta_branch = False
 
 # If first startup of this plugin, load all modules normally
 # If reloading the plugin, use importlib to reload modules
@@ -22,67 +20,21 @@ if "bpy" not in locals():
     from . import panels
     from . import operators
     from . import properties
-    from . import updater_ops
-    from . import updater
 else:
     import importlib
     importlib.reload(core)
     importlib.reload(panels)
     importlib.reload(operators)
     importlib.reload(properties)
-    importlib.reload(updater_ops)
-    importlib.reload(updater)
 
 
 # List of all buttons and panels
-classes = [  # These panels will only be loaded when the user is logged in
+classes = [
     panels.main.ReceiverPanel,
-    panels.objects.ObjectsPanel,
-    panels.command_api.CommandPanel,
-    panels.retargeting.RetargetingPanel,
-    panels.updater.UpdaterPanel,
-    panels.info.InfoPanel,
-]
-classes_login = [  # These panels will only be loaded when the user is logged out
-    panels.login.LoginPanel,
-    panels.updater.UpdaterPanel,
-    panels.info.InfoPanel,
-]
-classes_always_enable = [  # These non-panels will always be loaded, all non-panel ui should go in here
-    operators.login.LoginButton,
-    operators.login.RegisterButton,
-    operators.login.ShowPassword,
-    operators.login.LogoutButton,
     operators.receiver.ReceiverStart,
     operators.receiver.ReceiverStop,
     operators.recorder.RecorderStart,
     operators.recorder.RecorderStop,
-    operators.detector.DetectFaceShapes,
-    operators.detector.DetectActorBones,
-    operators.detector.SaveCustomShapes,
-    operators.detector.SaveCustomBones,
-    operators.detector.SaveCustomBonesRetargeting,
-    operators.detector.ImportCustomBones,
-    operators.detector.ExportCustomBones,
-    operators.detector.ClearCustomBones,
-    operators.detector.ClearCustomShapes,
-    operators.actor.InitTPose,
-    operators.actor.ResetTPose,
-    operators.actor.PrintCurrentPose,
-    operators.command_api.CommandTest,
-    operators.command_api.StartCalibration,
-    operators.command_api.Restart,
-    operators.command_api.StartRecording,
-    operators.command_api.StopRecording,
-    operators.retargeting.BuildBoneList,
-    operators.retargeting.ClearBoneList,
-    operators.retargeting.RetargetAnimation,
-    panels.retargeting.RSL_UL_BoneList,
-    panels.retargeting.BoneListItem,
-    operators.info.LicenseButton,
-    operators.info.RokokoButton,
-    operators.info.DocumentationButton,
-    operators.info.ForumButton,
 ]
 
 
@@ -91,7 +43,7 @@ def check_unsupported_blender_versions():
     if bpy.app.version < (2, 80):
         unregister()
         sys.tracebacklimit = 0
-        raise ImportError('\n\nBlender versions older than 2.80 are not supported by Rokoko Studio Live. '
+        raise ImportError('\n\nBlender versions older than 2.80 are not supported by CPTR plugin'
                           '\nPlease use Blender 2.80 or later.'
                           '\n')
 
@@ -106,25 +58,12 @@ def check_unsupported_blender_versions():
 
 # register and unregister all classes
 def register():
-    print("\n### Loading Rokoko Studio Live for Blender...")
+    print("\nLoading CPTR plugin")
 
     # Check for unsupported Blender versions
     check_unsupported_blender_versions()
 
-    # Register updater and check for Rokoko Studio Live updates
-    updater_ops.register(bl_info, beta_branch)
-
-    # Check if the user is logged in, show the login panel if not
-    logged_in = core.login.login_from_cache(classes, classes_login)
-
-    # Register classes
-    if logged_in:
-        for cls in classes:
-            bpy.utils.register_class(cls)
-    else:
-        for cls in classes_login:
-            bpy.utils.register_class(cls)
-    for cls in classes_always_enable:
+    for cls in classes:
         bpy.utils.register_class(cls)
 
     # Register all custom properties
@@ -139,21 +78,18 @@ def register():
     # Init fbx patcher
     core.fbx_patcher.start_fbx_patch_timer()
 
-    print("### Loaded Rokoko Studio Live for Blender successfully!\n")
+    print("Loaded CPTR plugin\n")
 
 
 def unregister():
-    print("### Unloading Rokoko Studio Live for Blender...")
-
-    # Unregister updater
-    updater_ops.unregister()
+    print("Unloading CPTR plugin")
 
     # Shut down receiver if the plugin is disabled while it is running
     if operators.receiver.receiver_enabled:
         operators.receiver.ReceiverStart.force_disable()
 
     # Unregister all classes
-    for cls in reversed(classes_login + classes + classes_always_enable):
+    for cls in reversed(classes):
         try:
             bpy.utils.unregister_class(cls)
         except RuntimeError:
@@ -161,8 +97,7 @@ def unregister():
 
     # Unload all custom icons
     core.icon_manager.unload_icons()
-
-    print("### Unloaded Rokoko Studio Live for Blender successfully!\n")
+    print("Unloaded CPTR plugin\n")
 
 
 if __name__ == '__main__':

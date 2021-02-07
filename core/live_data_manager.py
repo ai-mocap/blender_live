@@ -103,7 +103,7 @@ class LiveData:
     # Get data for and from the live data selection lists
 
     def get_actor_by_obj(self, obj):
-        actors = [actor for actor in self.actors if actor['name'] == obj.rsl_animations_actors]
+        actors = [actor for actor in self.actors if actor['name'] == obj.cptr_animations_actors]
         return actors[0] if actors else None
 
     def get_actor_id(self, actor):
@@ -111,7 +111,7 @@ class LiveData:
 
     def get_face_by_obj(self, obj):
         face_id = 'faceId'  # if self.version <= 2 else 'parentName'
-        faces = [face for face in self.faces if face[face_id] == obj.rsl_animations_faces]
+        faces = [face for face in self.faces if face[face_id] == obj.cptr]
         return faces[0] if faces else None
 
     def get_face_id(self, face):
@@ -124,7 +124,7 @@ class LiveData:
 
     def get_prop_by_obj(self, obj):
         if self.version <= 2:
-            obj_id = obj.rsl_animations_props_trackers.split('|')
+            obj_id = obj.cptr_animations_props_trackers.split('|')
             obj_type = obj_id[0]
             obj_name = obj_id[1]
 
@@ -135,7 +135,7 @@ class LiveData:
 
             return props[0] if props else None
 
-        props = [prop for prop in self.props if prop['name'] == obj.rsl_animations_props_trackers]
+        props = [prop for prop in self.props if prop['name'] == obj.cptr_animations_props_trackers]
         return props[0] if props else None
 
     def get_prop_id(self, prop, is_tracker=False):

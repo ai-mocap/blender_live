@@ -1,6 +1,8 @@
 import bpy
 import asyncio
 import json
+from datetime import datetime
+import math
 
 from . import animations, utils, minimal_hand
 
@@ -59,9 +61,28 @@ class Receiver:
         try:
             for data_raw in self.data_list:
                 data = json.loads(data_raw)
-                minimal_hand.process_bones(self.line_no, data['theta'])
-                minimal_hand.process_xyz(self.line_no, data['xyz'])
-                self.line_no += 1
+                pt = datetime.fromisoformat(data['ts'])
+                current_timestamp = math.floor((pt.microsecond / 1000000 + pt.second + pt.minute * 60 + pt.hour * 3600) * 100)
+                if self.prev_timestamp is not None:
+                    timestamp_delta = current_timestamp - self.prev_timestamp
+                else:
+                    timestamp_delta = 0
+                frame_idx = bpy.context.scene.frame_current + timestamp_delta
+                print(data['hands'][0]['label'])
+                if bpy.context.scene.cptr_recording:
+                    bpy.context.scene.frame_set(frame_idx)
+                    bpy.data.scenes["Scene"].frame_end = frame_idx + 1
+                if data['hands']['left'] is not None:
+                    minimal_hand.process_bones(data['hands']['left']['theta'],
+                                               root_position=data['hands']['left']['xyz'][[0]],
+                                               hand='left')  # animate second hand as right
+                if data['hands']['right'] is not None:
+                    minimal_hand.process_bones(data['hands']['right']['theta'],
+                                               root_position=data['hands']['right']['xyz'][[0]],
+                                               hand='right')  # animate second hand as right
+
+                self.prev_timestamp = current_timestamp
+                print(timestamp_delta, current_timestamp, self.prev_timestamp, data['ts'])
         except ValueError as exc:
             print('Packet contained no data', exc)
             return ['Packets contain no data!'], False
@@ -71,7 +92,7 @@ class Receiver:
             return ['Wrong data format!', 'Use JSON v2 or higher!'], True
         except KeyError as e:
             print('KeyError:', e)
-            return ['Incompatible JSON version!', 'Use the latest Studio', 'and plugin versions.'], True
+            return ['Incompatible JSON version!', 'Use the latest versions.'], True
         finally:
             self.data_list = []
 
@@ -84,14 +105,14 @@ class Receiver:
         if received:
             self.i += 1
             self.i_np = 0
-            if self.i % (bpy.context.scene.rsl_receiver_fps * 5) == 0:
+            if self.i % (bpy.context.scene.cptr_receiver_fps * 5) == 0:
                 utils.ui_refresh_properties()
                 utils.ui_refresh_view_3d()
             return
 
         # If receiving a packet after one second of no packets, update UI with next packet
         self.i_np += 1
-        if self.i_np == bpy.context.scene.rsl_receiver_fps:
+        if self.i_np == bpy.context.scene.cptr_receiver_fps:
             self.i = -1
 
     def handle_error(self, error, force_error):
@@ -109,7 +130,7 @@ class Receiver:
         if not self.error_temp:
             self.error_temp = error
             if force_error:
-                self.error_count = bpy.context.scene.rsl_receiver_fps - 1
+                self.error_count = bpy.context.scene.cptr_receiver_fps - 1
             return
 
         if error == self.error_temp:
@@ -117,11 +138,11 @@ class Receiver:
         else:
             self.error_temp = error
             if force_error:
-                self.error_count = bpy.context.scene.rsl_receiver_fps
+                self.error_count = bpy.context.scene.cptr_receiver_fps
             else:
                 self.error_count = 0
 
-        if self.error_count == bpy.context.scene.rsl_receiver_fps:
+        if self.error_count == bpy.context.scene.cptr_receiver_fps:
             show_error = self.error_temp
             utils.ui_refresh_view_3d()
             print('REFRESH')
@@ -132,7 +153,7 @@ class Receiver:
         await ws.prepare(request)
 
         async for msg in ws:
-            if msg.type == aiohttp.WSMsgType.TEXT:
+            if msg.type == aiohttp.WSMsgType.TEXT and self.recieving:
                 self.data_list.append(msg.data)
                 print(f'ws message appended to datalist, new size={len(self.data_list)}')
             elif msg.type == aiohttp.WSMsgType.ERROR:
@@ -157,9 +178,10 @@ class Receiver:
         await self.site.start()
 
     def start(self, port):
+        print('started')
         minimal_hand.init()
         self.loop = asyncio.get_event_loop()
-        self.line_no = 0
+        self.prev_timestamp = 0
         self.data_list = []
         self.loop.create_task(self.run_websocket_server())
         self.loop.stop()
@@ -170,11 +192,13 @@ class Receiver:
 
         self.error_temp = []
         self.error_count = 0
+        self.recieving = True
 
         global show_error
         show_error = False
 
-        print("Rokoko Studio Live started listening on port " + str(port))
+        print("CPTR started listening on port " + str(port))
+        print(f"Length of queue is {len(self.data_list)}")
 
     async def async_stop(self):
         await self.app.shutdown()
@@ -183,4 +207,5 @@ class Receiver:
     def stop(self):
         print("CPTR stopping")
         self.loop.run_until_complete(self.async_stop())
+        self.recieving = False
         print("CPTR stopped")
