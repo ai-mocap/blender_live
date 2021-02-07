@@ -1,8 +1,8 @@
 import bpy
 import asyncio
 import json
+import logging
 from datetime import datetime
-import math
 
 from . import animations, utils, minimal_hand
 
@@ -19,6 +19,7 @@ import aiohttp.web  # noqa
 
 error_temp = ''
 show_error = []
+logger = logging.getLogger(__name__)
 
 
 class Receiver:
@@ -39,19 +40,12 @@ class Receiver:
         try:
             self.loop.stop()
             self.loop.run_forever()
-        except BlockingIOError:
-            error = ['Receiving no data!']
-        except OSError as e:
-            print('Packet error:', e.strerror)
-            error = ['Packets too big!']
-            force_error = True
-        except AttributeError as e:
-            print('Socket error:', e)
-            error = ['Socket not running!']
+        except Exception as err:
+            error = [f'Error while running: {err}']
+            logger.exception("Error in run_forever")
             force_error = True
 
         if self.data_list:
-            # Process animation data
             error, force_error = self.process_data()
 
         self.handle_ui_updates(received)
@@ -62,43 +56,33 @@ class Receiver:
             for data_raw in self.data_list:
                 data = json.loads(data_raw)
                 pt = datetime.fromisoformat(data['ts'])
-                current_timestamp = math.floor((pt.microsecond / 1000000 + pt.second + pt.minute * 60 + pt.hour * 3600) * 100)
+                current_timestamp = pt.timestamp()
                 if self.prev_timestamp is not None:
                     timestamp_delta = current_timestamp - self.prev_timestamp
                 else:
                     timestamp_delta = 0
                 frame_idx = bpy.context.scene.frame_current + timestamp_delta
-                print(data['hands'][0]['label'])
+                logger.debug(f"Hands: {data['hands'].keys()}")
                 if bpy.context.scene.cptr_recording:
                     bpy.context.scene.frame_set(frame_idx)
                     bpy.data.scenes["Scene"].frame_end = frame_idx + 1
-                if data['hands']['left'] is not None:
-                    minimal_hand.process_bones(data['hands']['left']['theta'],
-                                               root_position=data['hands']['left']['xyz'][[0]],
-                                               hand='left')  # animate second hand as right
-                if data['hands']['right'] is not None:
-                    minimal_hand.process_bones(data['hands']['right']['theta'],
-                                               root_position=data['hands']['right']['xyz'][[0]],
-                                               hand='right')  # animate second hand as right
+                left = data['hands'].get('Left')
+                right = data['hands'].get('Right')
+                if left:
+                    minimal_hand.process_bones(left['theta'], root_position=left['xyz'][0], hand='left')
+                if right:
+                    minimal_hand.process_bones(right['theta'], root_position=right['xyz'][0], hand='right')
 
                 self.prev_timestamp = current_timestamp
-                print(timestamp_delta, current_timestamp, self.prev_timestamp, data['ts'])
-        except ValueError as exc:
-            print('Packet contained no data', exc)
-            return ['Packets contain no data!'], False
-        except (UnicodeDecodeError, TypeError) as e:
-            print('Wrong live data format! Use JSON v2!')
-            print(e)
-            return ['Wrong data format!', 'Use JSON v2 or higher!'], True
-        except KeyError as e:
-            print('KeyError:', e)
-            return ['Incompatible JSON version!', 'Use the latest versions.'], True
+                logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
+        except Exception:
+            logger.exception("Unexpected error")
+            return ['Error processing data'], False
+        else:
+            animations.animate()
+            return '', False
         finally:
             self.data_list = []
-
-        animations.animate()
-
-        return '', False
 
     def handle_ui_updates(self, received):
         # Update UI every 5 seconds when packets are received continuously
@@ -124,7 +108,7 @@ class Receiver:
             self.error_temp = []
             show_error = []
             utils.ui_refresh_view_3d()
-            print('REFRESH')
+            logger.debug('REFRESH')
             return
 
         if not self.error_temp:
@@ -145,21 +129,21 @@ class Receiver:
         if self.error_count == bpy.context.scene.cptr_receiver_fps:
             show_error = self.error_temp
             utils.ui_refresh_view_3d()
-            print('REFRESH')
+            logger.debug('REFRESH')
 
     async def websocket_handler(self, request):
-        print('ws connected')
+        logger.debug('ws connected')
         ws = aiohttp.web.WebSocketResponse()
         await ws.prepare(request)
 
         async for msg in ws:
-            if msg.type == aiohttp.WSMsgType.TEXT and self.recieving:
+            if msg.type == aiohttp.WSMsgType.TEXT:
                 self.data_list.append(msg.data)
-                print(f'ws message appended to datalist, new size={len(self.data_list)}')
+                logger.debug(f'ws message appended to datalist, new size={len(self.data_list)}')
             elif msg.type == aiohttp.WSMsgType.ERROR:
-                print('ws connection closed with exception %s' % ws.exception())
+                logger.debug('ws connection closed with exception %s' % ws.exception())
 
-        print('websocket connection closed')
+        logger.debug('websocket connection closed')
 
         return ws
 
@@ -178,7 +162,7 @@ class Receiver:
         await self.site.start()
 
     def start(self, port):
-        print('started')
+        logger.debug('started')
         minimal_hand.init()
         self.loop = asyncio.get_event_loop()
         self.prev_timestamp = 0
@@ -192,20 +176,18 @@ class Receiver:
 
         self.error_temp = []
         self.error_count = 0
-        self.recieving = True
 
         global show_error
         show_error = False
 
-        print("CPTR started listening on port " + str(port))
-        print(f"Length of queue is {len(self.data_list)}")
+        logger.debug("CPTR started listening on port " + str(port))
+        logger.debug(f"Length of queue is {len(self.data_list)}")
 
     async def async_stop(self):
         await self.app.shutdown()
         await self.app.cleanup()
 
     def stop(self):
-        print("CPTR stopping")
+        logger.debug("CPTR stopping")
         self.loop.run_until_complete(self.async_stop())
-        self.recieving = False
-        print("CPTR stopped")
+        logger.debug("CPTR stopped")
