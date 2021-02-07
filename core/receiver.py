@@ -132,19 +132,22 @@ class Receiver:
             logger.debug('REFRESH')
 
     async def websocket_handler(self, request):
-        logger.debug('ws connected')
-        ws = aiohttp.web.WebSocketResponse()
-        await ws.prepare(request)
+        try:
+            logger.debug('ws connected')
+            ws = aiohttp.web.WebSocketResponse()
+            await ws.prepare(request)
 
-        async for msg in ws:
-            if msg.type == aiohttp.WSMsgType.TEXT:
-                self.data_list.append(msg.data)
-                logger.debug(f'ws message appended to datalist, new size={len(self.data_list)}')
-            elif msg.type == aiohttp.WSMsgType.ERROR:
-                logger.debug('ws connection closed with exception %s' % ws.exception())
-
-        logger.debug('websocket connection closed')
-
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    self.data_list.append(msg.data)
+                    logger.debug(f'ws message appended to datalist, new size={len(self.data_list)}')
+                elif msg.type == aiohttp.WSMsgType.ERROR:
+                    logger.debug(f'ws connection closed with exception {ws.exception()}')
+        except Exception:
+            logger.exception("Exception in websocket_handler")
+            raise
+        finally:
+            logger.debug('websocket connection closed')
         return ws
 
     async def run_websocket_server(self):
@@ -158,11 +161,13 @@ class Receiver:
             port=12345,
             reuse_address=True,
             reuse_port=True,
+            shutdown_timeout=0,
         )
         await self.site.start()
+        logger.debug("Started websocket server")
 
     def start(self, port):
-        logger.debug('started')
+        logger.debug('Starting')
         minimal_hand.init()
         self.loop = asyncio.get_event_loop()
         self.prev_timestamp = 0
@@ -180,14 +185,16 @@ class Receiver:
         global show_error
         show_error = False
 
-        logger.debug("CPTR started listening on port " + str(port))
+        logger.debug(f"Started listening on port {port}")
         logger.debug(f"Length of queue is {len(self.data_list)}")
 
     async def async_stop(self):
-        await self.app.shutdown()
-        await self.app.cleanup()
+        logger.debug("async_stop enter")
+        await self.runner.shutdown()
+        await self.runner.cleanup()
+        logger.debug("async_stop exit")
 
     def stop(self):
-        logger.debug("CPTR stopping")
+        logger.debug("Stopping")
         self.loop.run_until_complete(self.async_stop())
-        logger.debug("CPTR stopped")
+        logger.debug("Stopped")

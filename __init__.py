@@ -14,6 +14,8 @@ bl_info = {
 # If reloading the plugin, use importlib to reload modules
 # This lets you do adjustments to the plugin on the fly without having to restart Blender
 import sys
+import os
+import logging
 if "bpy" not in locals():
     import bpy
     from . import core
@@ -58,7 +60,8 @@ def check_unsupported_blender_versions():
 
 # register and unregister all classes
 def register():
-    print("\nLoading CPTR plugin")
+    logging.basicConfig(level=os.getenv('LOGGING_LEVEL'))
+    logging.debug("\nLoading CPTR plugin")
 
     # Check for unsupported Blender versions
     check_unsupported_blender_versions()
@@ -78,11 +81,11 @@ def register():
     # Init fbx patcher
     core.fbx_patcher.start_fbx_patch_timer()
 
-    print("Loaded CPTR plugin\n")
+    logging.debug("Loaded CPTR plugin\n")
 
 
 def unregister():
-    print("Unloading CPTR plugin")
+    logging.debug("Unloading CPTR plugin")
 
     # Shut down receiver if the plugin is disabled while it is running
     if operators.receiver.receiver_enabled:
@@ -97,7 +100,7 @@ def unregister():
 
     # Unload all custom icons
     core.icon_manager.unload_icons()
-    print("Unloaded CPTR plugin\n")
+    logging.debug("Unloaded CPTR plugin\n")
 
 
 if __name__ == '__main__':
