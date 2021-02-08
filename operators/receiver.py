@@ -1,4 +1,5 @@
 import bpy
+import logging
 import time
 from threading import Thread
 
@@ -10,6 +11,7 @@ from ..core.animations import clear_animations
 timer = None
 receiver: Receiver = Receiver()
 receiver_enabled = False
+logger = logging.getLogger(__name__)
 
 
 class ReceiverStart(bpy.types.Operator):
@@ -37,10 +39,10 @@ class ReceiverStart(bpy.types.Operator):
 
         # Start the receiver
         try:
-            receiver.start(context.scene.cptr_receiver_port)
-        except OSError as e:
-            print('Socket error:', e.strerror)
-            self.report({'ERROR'}, 'This port is already in use!')
+            receiver.start(context)
+        except Exception as exc:
+            logger.exception("Exception while starting receiver")
+            self.report({'ERROR'}, str(exc))
             return {'CANCELLED'}
 
         receiver_enabled = True

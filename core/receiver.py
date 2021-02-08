@@ -1,5 +1,6 @@
 import bpy
 import asyncio
+import errno
 import json
 import logging
 from datetime import datetime
@@ -150,7 +151,7 @@ class Receiver:
             logger.debug('websocket connection closed')
         return ws
 
-    async def run_websocket_server(self):
+    async def run_websocket_server(self, context, port):
         self.app = aiohttp.web.Application()
         self.app.add_routes([aiohttp.web.get('/ws', self.websocket_handler)])
         self.runner = aiohttp.web.AppRunner(self.app)
@@ -158,23 +159,30 @@ class Receiver:
         self.site = aiohttp.web.TCPSite(
             self.runner,
             host='0.0.0.0',
-            port=12345,
+            port=port,
             reuse_address=True,
             reuse_port=True,
             shutdown_timeout=0,
         )
-        await self.site.start()
+        try:
+            await self.site.start()
+        except OSError as exc:
+            if exc.errno == errno.EADDRINUSE:
+                logger.debug(f"Port {port} is in use, autoselecting free port")
+                await self.run_websocket_server(context, port=None)
+                context.scene.cptr_receiver_port = self.site._port
+            else:
+                raise
+
         logger.debug("Started websocket server")
 
-    def start(self, port):
+    def start(self, context):
         logger.debug('Starting')
         minimal_hand.init()
         self.loop = asyncio.get_event_loop()
         self.prev_timestamp = 0
         self.data_list = []
-        self.loop.create_task(self.run_websocket_server())
-        self.loop.stop()
-        self.loop.run_forever()
+        self.loop.run_until_complete(self.run_websocket_server(context, context.scene.cptr_receiver_port))
 
         self.i = -1
         self.i_np = 0
@@ -185,7 +193,7 @@ class Receiver:
         global show_error
         show_error = False
 
-        logger.debug(f"Started listening on port {port}")
+        logger.debug(f"Started listening on port {context.scene.cptr_receiver_port}")
         logger.debug(f"Length of queue is {len(self.data_list)}")
 
     async def async_stop(self):

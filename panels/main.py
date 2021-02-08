@@ -43,6 +43,10 @@ class ReceiverPanel(ToolPanel, bpy.types.Panel):
         row.enabled = not receiver.receiver_enabled
         row.prop(context.scene, 'cptr_receiver_port', text='')
 
+        port = context.scene.cptr_receiver_port
+        row = col.row(align=True)
+        row.operator("wm.url_open", text="Link port").url = f"https://eks-eu.cptr.tech/connect.html?port={port}"
+
         row = layout.row(align=True)
         row.scale_y = 1.3
         if receiver.receiver_enabled:
