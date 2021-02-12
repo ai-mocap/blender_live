@@ -3,7 +3,6 @@ import datetime
 
 from ..core import animations
 from ..core import recorder as recorder_manager
-from ..core import receiver as receiver_cls
 from ..core.icon_manager import Icons
 from ..operators import receiver, recorder
 
@@ -45,7 +44,7 @@ class ReceiverPanel(ToolPanel, bpy.types.Panel):
 
         port = context.scene.cptr_receiver_port
         row = col.row(align=True)
-        row.operator("wm.url_open", text="Link port").url = f"https://eks-eu.cptr.tech/connect.html?port={port}"
+        row.operator("wm.url_open", text="Link port").url = f"https://app.cptr.tech/connect.html?port={port}"
 
         row = layout.row(align=True)
         row.scale_y = 1.3
@@ -68,17 +67,6 @@ class ReceiverPanel(ToolPanel, bpy.types.Panel):
                 time_recorded = int(timestamps[-1] - timestamps[0])
                 row = layout.row(align=True)
                 row.label(text='Recording time: ' + str(datetime.timedelta(seconds=time_recorded)))
-
-        if receiver.receiver_enabled and receiver_cls.show_error:
-            for i, error in enumerate(receiver_cls.show_error):
-                if i == 0:
-                    row = layout.row(align=True)
-                    row.label(text=error, icon='ERROR')
-                else:
-                    row = layout.row(align=True)
-                    row.scale_y = 0.3
-                    row.label(text=error, icon='BLANK1')
-            return
 
         if animations.live_data.version <= 2:
             show_connetions_v2(layout)

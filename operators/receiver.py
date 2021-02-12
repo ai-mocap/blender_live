@@ -30,7 +30,12 @@ class ReceiverStart(bpy.types.Operator):
             if bpy.context.screen.is_animation_playing:
                 return self.cancel(context)
 
-            receiver.run()
+            try:
+                receiver.run()
+            except Exception as exc:
+                logger.exception("Exception while running receiver")
+                #self.cancel(context)
+                self.report({'ERROR'}, str(exc))
 
         return {'PASS_THROUGH'}
 

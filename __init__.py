@@ -1,6 +1,6 @@
 # Important plugin info for Blender
 bl_info = {
-    'name': 'CPTR plugin for Blender',
+    'name': 'CPTR plugin for Blender (zip)',
     'author': 'CPTR TECH',
     'category': 'Animation',
     'location': 'View 3D > Tool Shelf > CPTR',
