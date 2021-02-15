@@ -53,9 +53,9 @@ class Receiver:
             left = data['hands'].get('Left')
             right = data['hands'].get('Right')
             if left:
-                minimal_hand.process_bones(left['theta'], root_position=left['xyz'][0], hand='left')
+                minimal_hand.process_bones(left['theta'], root_position=left['xyz'][9], hand='left')
             if right:
-                minimal_hand.process_bones(right['theta'], root_position=right['xyz'][0], hand='right')
+                minimal_hand.process_bones(right['theta'], root_position=right['xyz'][9], hand='right')
 
             self.prev_timestamp = current_timestamp
             logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
