@@ -278,9 +278,11 @@ def process_bones(frame_coords: np.ndarray, root_position: np.ndarray = None, ha
     :type hand: str
     """
     assert hand in ['right', 'left'], "Hand should be 'right' or 'left'"
+    comp_rot = 0.2  # compensate 20% of the rotation
 
     coords_raw = [Quaternion(quat) for quat in frame_coords]
     coords = map_coords(coords_raw, "quat_mano")
+    coords = {k: v @ v.slerp(Quaternion([1, 0, 0, 0]), 1 - comp_rot) for k, v in coords.items()}
 
     obj = bpy.data.objects[f"{hand}_root"]
     obj.rotation_mode = "QUATERNION"
