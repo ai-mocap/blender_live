@@ -44,7 +44,14 @@ def create_bones(bones, coords, prefix):
 
         b.head = coords[j1_name]
         b.tail = coords[j2_name]
-        # b.use_inherit_rotation = False
+        if 'thumb' in j1_name + "_" + j2_name:
+            b.roll = 0.86
+        elif 'point' in j1_name + "_" + j2_name:
+            b.roll = 0.23
+        elif 'ring' in j1_name + "_" + j2_name:
+            b.roll = 0.31
+        elif 'pinky' in j1_name + "_" + j2_name:
+            b.roll = 0.6
 
     # TODO add proper DFS, but we'll have to decide on the tree root first
     edit_bone[prefix + "thumb3_thumb_tip"].parent = edit_bone[prefix + "thumb2_thumb3"]
