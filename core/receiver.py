@@ -53,9 +53,9 @@ class Receiver:
             left = data['hands'].get('Left')
             right = data['hands'].get('Right')
             if left:
-                minimal_hand.process_bones(left['theta'], root_position=left['xyz'][9], hand='left')
+                self.left_hand.process_bones(left['relative_rotations'], left['relative_scales'])
             if right:
-                minimal_hand.process_bones(right['theta'], root_position=right['xyz'][9], hand='right')
+                self.right_hand.process_bones(right['relative_rotations'], right['relative_scales'])
 
             self.prev_timestamp = current_timestamp
             logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
@@ -111,7 +111,10 @@ class Receiver:
 
     def start(self, context):
         logger.debug('Starting')
-        minimal_hand.init()
+        #self.left_hand, self.right_hand = minimal_hand.create_hands()
+        self.left_hand = minimal_hand.Hand("left_")
+        self.left_hand.save_pose()
+        self.right_hand = minimal_hand.Hand("right_")
         self.loop = asyncio.get_event_loop()
         self.prev_timestamp = 0
         self.queue = asyncio.Queue()
