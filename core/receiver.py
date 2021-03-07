@@ -59,7 +59,6 @@ class Receiver:
 
             self.prev_timestamp = current_timestamp
             logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
-            animations.animate()
 
     def handle_ui_updates(self):
         utils.ui_refresh_properties()

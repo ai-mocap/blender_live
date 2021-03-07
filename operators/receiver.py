@@ -21,8 +21,7 @@ class ReceiverStart(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def modal(self, context, event):
-        # If ECS or F8 is pressed, cancel
-        if event.type == 'ESC' or event.type == 'F8' or not receiver_enabled:
+        if not receiver_enabled:
             return self.cancel(context)
 
         # This gets run every frame
@@ -34,7 +33,6 @@ class ReceiverStart(bpy.types.Operator):
                 receiver.run()
             except Exception as exc:
                 logger.exception("Exception while running receiver")
-                #self.cancel(context)
                 self.report({'ERROR'}, str(exc))
 
         return {'PASS_THROUGH'}
