@@ -1,7 +1,7 @@
 from bpy.types import Scene, Object
-from bpy.props import IntProperty, StringProperty, EnumProperty, BoolProperty, FloatProperty, CollectionProperty, PointerProperty
+from bpy.props import IntProperty, BoolProperty, FloatProperty
 
-from .core import animation_lists, state_manager, recorder
+from .core import recorder
 
 
 def register():
@@ -33,14 +33,6 @@ def register():
         description='This will reset the location and position of animated objects to the state of before starting the receiver',
         default=True
     )
-    Scene.cptr_hide_mesh_during_play = BoolProperty(
-        name='Hide Meshes during Play',
-        description='This will hide all meshes that are animated by armatures'
-                    '\nto greatly reduce lag and increase performance.'
-                    '\nThis will not hide animated faces',
-        default=False,
-        update=state_manager.update_hidden_meshes
-    )
     Scene.cptr_recording = BoolProperty(
         name='Toggle Recording',
         description='Start and stop recording of the data from Rokoko Studio',
@@ -49,24 +41,6 @@ def register():
     )
 
 # Objects
-    Object.cptr_animations_props_trackers = EnumProperty(
-        name='Tracker or Prop',
-        description='Select the prop or tracker that you want to attach this object to',
-        items=animation_lists.get_props_trackers,
-        update=state_manager.update_object
-    )
-    Object.cptr = EnumProperty(
-        name='Face',
-        description='Select the face that you want to attach this mesh to',
-        items=animation_lists.get_faces,
-        update=state_manager.update_face
-    )
-    Object.cptr_animations_actors = EnumProperty(
-        name='Actor',
-        description='Select the actor that you want to attach this armature to',
-        items=animation_lists.get_actors,
-        update=state_manager.update_actor
-    )
     Object.cptr_use_custom_scale = BoolProperty(
         name='Use Custom Scale',
         description='Select this if the objects scene scaling should be overwritten',

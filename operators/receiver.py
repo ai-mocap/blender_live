@@ -1,12 +1,8 @@
 import bpy
 import logging
-import time
-from threading import Thread
 
-from ..core import state_manager
 from ..core.receiver import Receiver
 from ..core.utils import ui_refresh_all
-from ..core.animations import clear_animations
 
 timer = None
 receiver: Receiver = Receiver()
@@ -54,12 +50,6 @@ class ReceiverStart(bpy.types.Operator):
         if context.screen.is_animation_playing:
             bpy.ops.screen.animation_play()
 
-        # Clear current live data
-        clear_animations()
-
-        # Save the scene
-        state_manager.save_scene()
-
         # Register this classes modal operator in Blenders event handling system and execute it at the specified fps
         context.window_manager.modal_handler_add(self)
         timer = context.window_manager.event_timer_add(1 / context.scene.cptr_receiver_fps, window=bpy.context.window)
@@ -82,15 +72,6 @@ class ReceiverStart(bpy.types.Operator):
         # If the recording is still running, let it load the scene afterwards with a delay
         if bpy.context.scene.cptr_recording:
             bpy.context.scene.cptr_recording = False
-            thread = Thread(target=load_scene_later, args=[])
-            thread.start()
-        else:
-            state_manager.load_scene()
-
-
-def load_scene_later():
-    time.sleep(0.04)
-    state_manager.load_scene()
 
 
 class ReceiverStop(bpy.types.Operator):

@@ -37,6 +37,8 @@ classes = [
     operators.receiver.ReceiverStop,
     operators.recorder.RecorderStart,
     operators.recorder.RecorderStop,
+    operators.hands.ResetHands,
+    operators.hands.LoadHands,
 ]
 
 
@@ -74,12 +76,6 @@ def register():
 
     # Load custom icons
     core.icon_manager.load_icons()
-
-    # Load bone detection list
-    core.detection_manager.load_detection_lists()
-
-    # Init fbx patcher
-    core.fbx_patcher.start_fbx_patch_timer()
 
     logging.debug("Loaded CPTR plugin\n")
 

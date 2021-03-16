@@ -1,64 +1,67 @@
 import bpy
 from mathutils import Quaternion
 
+import os.path
+import pathlib
+
 
 mpii_joints = [
     "root",
+
     "thumb1",
     "thumb2",
     "thumb3",
-    "thumb_tip",
-    "point1",
-    "point2",
-    "point3",
-    "point_tip",
+    "thumb4",
+
+    "index1",
+    "index2",
+    "index3",
+    "index4",
+
     "middle1",
     "middle2",
     "middle3",
-    "middle_tip",
+    "middle4",
+
     "ring1",
     "ring2",
     "ring3",
-    "ring_tip",
+    "ring4",
+
     "pinky1",
     "pinky2",
     "pinky3",
-    "pinky_tip",
+    "pinky4",
 ]
 
+mpii_parents = dict(
+    root=None,
 
-def map_mpii_coords(coord_list):
-    return {name: coord_list[idx] for idx, name in enumerate(mpii_joints)}
+    thumb1='root',
+    thumb2='thumb1',
+    thumb3='thumb2',
+    thumb4='thumb3',
 
+    index1='root',
+    index2='index1',
+    index3='index2',
+    index4='index3',
 
-def map_mpii_bones(coord_list):
-    coords = map_mpii_coords(coord_list)
-    return {(src, dst): (coords[src], coords[dst]) for src, dst in bones}
+    middle1='root',
+    middle2='middle1',
+    middle3='middle2',
+    middle4='middle3',
 
+    ring1='root',
+    ring2='ring1',
+    ring3='ring2',
+    ring4='ring3',
 
-# Should be in MPII order
-bones = [
-    ("root", "thumb1"),
-    ("thumb1", "thumb2"),
-    ("thumb2", "thumb3"),
-    ("thumb3", "thumb_tip"),
-    ("root", "point1"),
-    ("point1", "point2"),
-    ("point2", "point3"),
-    ("point3", "point_tip"),
-    ("root", "middle1"),
-    ("middle1", "middle2"),
-    ("middle2", "middle3"),
-    ("middle3", "middle_tip"),
-    ("root", "ring1"),
-    ("ring1", "ring2"),
-    ("ring2", "ring3"),
-    ("ring3", "ring_tip"),
-    ("root", "pinky1"),
-    ("pinky1", "pinky2"),
-    ("pinky2", "pinky3"),
-    ("pinky3", "pinky_tip"),
-]
+    pinky1='root',
+    pinky2='pinky1',
+    pinky3='pinky2',
+    pinky4='pinky3',
+)
 
 
 def create_hands():
@@ -79,75 +82,64 @@ def create_hands():
         return left, right
 
 
+def load_hands():
+    filepath = pathlib.Path(os.path.dirname(__file__)).parent.resolve() / "resources" / "handlmoved.blend"
+
+    with bpy.data.libraries.load(str(filepath)) as (data_from, data_to):
+        data_to.objects = data_from.objects
+
+    objects = bpy.context.view_layer.active_layer_collection.collection.objects
+    for obj in data_to.objects:
+        if obj is not None:
+            objects.link(obj)
+
+
 class Hand:
     def __init__(self, prefix):
         self.prefix = prefix
-        self.ref_quats = {'root': Quaternion()}
-        self.ref_scales = {'root': 1.}
+        self.ref_quats = {None: Quaternion()}
+        self.ref_scales = {None: 1.}
         self.enable_scale = False
 
+    @property
+    def object(self):
+        name = self.prefix + "Skeleton"
+        if name in bpy.data.objects:
+            return bpy.data.objects[name]
+
+    def reset_pose(self):
+        if self.object is None:
+            return
+        for bone in self.object.pose.bones:
+            bone.rotation_quaternion = Quaternion()
+
     def save_pose(self):
-        prefix = self.prefix
-        arm_obj = bpy.data.objects[prefix + "Skeleton"]
-        arm_obj.select_set(True)
+        if self.object is None:
+            return
+        self.object.select_set(True)
+        bpy.context.view_layer.objects.active = self.object
         bpy.ops.object.mode_set(mode="EDIT", toggle=False)
-        edit_bone = arm_obj.data.edit_bones
-        for src, dst in bones:
-            bone_name = f"{src}_{dst}"
-            self.ref_quats[dst] = edit_bone[f"{prefix}{bone_name}"].matrix.to_quaternion()
-            self.ref_scales[dst] = edit_bone[f"{prefix}{bone_name}"].length
-        bpy.ops.object.mode_set(mode="OBJECT")
+        edit_bones = self.object.data.edit_bones
+        for joint in mpii_joints:
+            if joint in edit_bones:
+                self.ref_quats[joint] = edit_bones[joint].matrix.to_quaternion()
+                self.ref_scales[joint] = edit_bones[joint].length
+            else:
+                self.ref_quats[joint] = self.ref_quats[mpii_parents[joint]]
+                self.ref_scales[joint] = self.ref_scales[mpii_parents[joint]]
 
     def process_bones(self, relative_rotations, relative_scales):
-        prefix = self.prefix
-        coords = map_mpii_bones(list(zip(relative_rotations, [1] + relative_scales)))
-        obj = bpy.data.objects[f"{prefix}Skeleton"]
-        obj.rotation_mode = "QUATERNION"
-        obj.rotation_quaternion = relative_rotations[0]
-        for (src, dst), ((parent_rel_quat, parent_rel_scale), (rel_quat, rel_scale)) in coords.items():
-            obj = bpy.data.objects[f"{prefix}Skeleton"].pose.bones[f"{prefix}{src}_{dst}"]
-            obj.rotation_mode = "QUATERNION"
-            obj.rotation_quaternion = self.ref_quats[dst].inverted() @ self.ref_quats[src] @ Quaternion(rel_quat)
-            scale = rel_scale * self.ref_scales[src] / self.ref_scales[dst] if self.enable_scale else 1
-            obj.scale = (scale, scale, scale)
+        for idx, bone in enumerate(mpii_joints):
+            parent = mpii_parents[bone]
+            rel_quat = relative_rotations[idx]
+            rel_scale = relative_scales[idx - 1] if idx else 1.
 
-    def create_bones(self):
-        prefix = self.prefix
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.ops.object.armature_add(
-            enter_editmode=False, align="WORLD", location=(0, 0, 0), scale=(1, 1, 1)
-        )
-        armature = bpy.data.objects["Armature"]
-        armature.name = prefix + "Skeleton"
-        bpy.ops.object.select_all(action="DESELECT")
-        arm_obj = bpy.data.objects[prefix + "Skeleton"]
-        arm_obj.select_set(True)
-        bpy.context.view_layer.objects.active = arm_obj
-        bpy.ops.object.mode_set(mode="EDIT", toggle=False)
-
-        edit_bone = arm_obj.data.edit_bones
-        edit_bone.remove(edit_bone[0])
-        parent_coords = {'root': 0}
-        for j1_name, j2_name in bones:
-            b = edit_bone.new(f"{prefix}{j1_name}_{j2_name}")
-            b.head = (0, parent_coords[j1_name], 0)
-            parent_coords[j2_name] = b.head[1] + 1
-            b.tail = (0, parent_coords[j2_name], 0)
-
-        # TODO add proper DFS, but we'll have to decide on the tree root first
-        edit_bone[prefix + "thumb3_thumb_tip"].parent = edit_bone[prefix + "thumb2_thumb3"]
-        edit_bone[prefix + "thumb2_thumb3"].parent = edit_bone[prefix + "thumb1_thumb2"]
-        edit_bone[prefix + "thumb1_thumb2"].parent = edit_bone[prefix + "root_thumb1"]
-        edit_bone[prefix + "point3_point_tip"].parent = edit_bone[prefix + "point2_point3"]
-        edit_bone[prefix + "point2_point3"].parent = edit_bone[prefix + "point1_point2"]
-        edit_bone[prefix + "point1_point2"].parent = edit_bone[prefix + "root_point1"]
-        edit_bone[prefix + "middle3_middle_tip"].parent = edit_bone[prefix + "middle2_middle3"]
-        edit_bone[prefix + "middle2_middle3"].parent = edit_bone[prefix + "middle1_middle2"]
-        edit_bone[prefix + "middle1_middle2"].parent = edit_bone[prefix + "root_middle1"]
-        edit_bone[prefix + "ring3_ring_tip"].parent = edit_bone[prefix + "ring2_ring3"]
-        edit_bone[prefix + "ring2_ring3"].parent = edit_bone[prefix + "ring1_ring2"]
-        edit_bone[prefix + "ring1_ring2"].parent = edit_bone[prefix + "root_ring1"]
-        edit_bone[prefix + "pinky3_pinky_tip"].parent = edit_bone[prefix + "pinky2_pinky3"]
-        edit_bone[prefix + "pinky2_pinky3"].parent = edit_bone[prefix + "pinky1_pinky2"]
-        edit_bone[prefix + "pinky1_pinky2"].parent = edit_bone[prefix + "root_pinky1"]
-        bpy.ops.object.mode_set(mode="OBJECT")
+            bones = self.object.pose.bones
+            if bone in bones:
+                obj = bones[bone]
+                obj.rotation_mode = "QUATERNION"
+                obj.rotation_quaternion = self.ref_quats[bone].inverted() @ self.ref_quats[parent] @ Quaternion(rel_quat)
+                scale = rel_scale * self.ref_scales[parent] / self.ref_scales[bone] if self.enable_scale else 1
+                obj.scale = (scale, scale, scale)
+                if bpy.context.scene.cptr_recording:
+                    obj.keyframe_insert(data_path="rotation_quaternion", index=-1)

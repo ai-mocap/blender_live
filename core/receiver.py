@@ -5,7 +5,7 @@ import json
 import logging
 from datetime import datetime
 
-from . import animations, utils, minimal_hand
+from . import utils, minimal_hand
 
 from os.path import dirname, abspath, join
 import sys
@@ -109,11 +109,16 @@ class Receiver:
         logger.debug("Started websocket server")
 
     def start(self, context):
-        logger.debug('Starting')
-        #self.left_hand, self.right_hand = minimal_hand.create_hands()
         self.left_hand = minimal_hand.Hand("left_")
-        self.left_hand.save_pose()
         self.right_hand = minimal_hand.Hand("right_")
+
+        if not self.left_hand.object and not self.right_hand.object:
+            minimal_hand.load_hands()
+        self.left_hand.save_pose()
+        self.right_hand.save_pose()
+        if bpy.context.object is not None:
+            bpy.ops.object.mode_set(mode="OBJECT")
+        bpy.ops.object.select_all(action="DESELECT")
         self.loop = asyncio.get_event_loop()
         self.prev_timestamp = 0
         self.queue = asyncio.Queue()
