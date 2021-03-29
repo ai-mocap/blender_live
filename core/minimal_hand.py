@@ -97,7 +97,7 @@ def load_hands():
 class Hand:
     def __init__(self, prefix):
         self.prefix = prefix
-        self.ref_quats = {None: Quaternion()}
+        self.to_ref_quats = {None: Quaternion()}
         self.ref_scales = {None: 1.}
         self.enable_scale = False
 
@@ -111,7 +111,9 @@ class Hand:
         if self.object is None:
             return
         for bone in self.object.pose.bones:
+            bone.rotation_mode = "QUATERNION"
             bone.rotation_quaternion = Quaternion()
+            bone.scale = (1, 1, 1)
 
     def save_pose(self):
         if self.object is None:
@@ -120,26 +122,30 @@ class Hand:
         bpy.context.view_layer.objects.active = self.object
         bpy.ops.object.mode_set(mode="EDIT", toggle=False)
         edit_bones = self.object.data.edit_bones
+        ref_quats = {None: Quaternion()}
         for joint in mpii_joints:
+            parent = mpii_parents[joint]
             if joint in edit_bones:
-                self.ref_quats[joint] = edit_bones[joint].matrix.to_quaternion()
+                ref_quats[joint] = quat = edit_bones[joint].matrix.to_quaternion()
                 self.ref_scales[joint] = edit_bones[joint].length
             else:
-                self.ref_quats[joint] = self.ref_quats[mpii_parents[joint]]
-                self.ref_scales[joint] = self.ref_scales[mpii_parents[joint]]
+                ref_quats[joint] = quat = ref_quats[parent]
+                self.ref_scales[joint] = self.ref_scales[parent]
+            self.to_ref_quats[joint] = quat.inverted() @ ref_quats[parent]
 
     def process_bones(self, relative_rotations, relative_scales):
+        bones = self.object.pose.bones
         for idx, bone in enumerate(mpii_joints):
             parent = mpii_parents[bone]
             rel_quat = relative_rotations[idx]
             rel_scale = relative_scales[idx - 1] if idx else 1.
 
-            bones = self.object.pose.bones
             if bone in bones:
                 obj = bones[bone]
-                obj.rotation_mode = "QUATERNION"
-                obj.rotation_quaternion = self.ref_quats[bone].inverted() @ self.ref_quats[parent] @ Quaternion(rel_quat)
-                scale = rel_scale * self.ref_scales[parent] / self.ref_scales[bone] if self.enable_scale else 1
-                obj.scale = (scale, scale, scale)
+                quat = self.to_ref_quats[bone] @ Quaternion(rel_quat)
+                obj.rotation_quaternion = quat
+                if self.enable_scale:
+                    scale = rel_scale * self.ref_scales[parent] / self.ref_scales[bone]
+                    obj.scale = (scale, scale, scale)
                 if bpy.context.scene.cptr_recording:
                     obj.keyframe_insert(data_path="rotation_quaternion", index=-1)

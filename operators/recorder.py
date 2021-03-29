@@ -3,7 +3,7 @@ import bpy
 
 class RecorderStart(bpy.types.Operator):
     bl_idname = "cptr.recorder_start"
-    bl_label = "Start Recording"
+    bl_label = "Record"
     bl_description = "Start recording data from CPTR.tech"
     bl_options = {'INTERNAL'}
 
@@ -18,7 +18,7 @@ class RecorderStart(bpy.types.Operator):
 
 class RecorderStop(bpy.types.Operator):
     bl_idname = "cptr.recorder_stop"
-    bl_label = "Stop Recording"
+    bl_label = "Stop"
     bl_description = "Stop recording data from CPTR.tech"
     bl_options = {'INTERNAL'}
 

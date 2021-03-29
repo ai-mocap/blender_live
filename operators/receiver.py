@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ReceiverStart(bpy.types.Operator):
     bl_idname = "cptr.receiver_start"
-    bl_label = "Start Receiver"
+    bl_label = "Start"
     bl_description = "Start receiving data from cptr.tech"
     bl_options = {'INTERNAL'}
 
@@ -76,7 +76,7 @@ class ReceiverStart(bpy.types.Operator):
 
 class ReceiverStop(bpy.types.Operator):
     bl_idname = "cptr.receiver_stop"
-    bl_label = "Stop Receiver"
+    bl_label = "Pause"
     bl_description = "Stop receiving data from cptr.tech"
     bl_options = {'INTERNAL'}
 

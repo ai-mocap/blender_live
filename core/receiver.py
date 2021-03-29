@@ -1,14 +1,15 @@
 import bpy
+
 import asyncio
 import errno
-import json
 import logging
+import sys
 from datetime import datetime
+from os.path import dirname, abspath, join
 
 from . import utils, minimal_hand
 
-from os.path import dirname, abspath, join
-import sys
+logger = logging.getLogger(__name__)
 
 # Add vendor directory to module search path
 parent_dir = abspath(dirname(dirname(__file__)))
@@ -18,7 +19,17 @@ sys.path.append(vendor_dir)
 import aiohttp  # noqa
 import aiohttp.web  # noqa
 
-logger = logging.getLogger(__name__)
+try:
+    import orjson as json
+except ModuleNotFoundError:
+    logger.info("Module orjson is not found, installing using pip")
+    try:
+        import pip.__main__
+        pip.__main__._main(['install', 'orjson', '-t', vendor_dir])
+        import orjson as json
+    except Exception:
+        logger.exception("Failed to install orjson, using json module")
+        import json
 
 
 class CptrError(Exception):
@@ -30,7 +41,6 @@ class Receiver:
         self.loop.stop()
         self.loop.run_forever()
         self.process_data()
-        self.handle_ui_updates()
 
     def process_data(self):
         while not self.queue.empty():
@@ -59,10 +69,6 @@ class Receiver:
 
             self.prev_timestamp = current_timestamp
             logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
-
-    def handle_ui_updates(self):
-        utils.ui_refresh_properties()
-        utils.ui_refresh_view_3d()
 
     async def websocket_handler(self, request):
         try:

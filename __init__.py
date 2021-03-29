@@ -1,13 +1,13 @@
 # Important plugin info for Blender
 bl_info = {
-    'name': 'CPTR plugin for Blender (zip)',
-    'author': 'CPTR TECH',
+    'name': 'CPTR.tech plugin for Blender',
+    'author': 'CPTR.TECH',
     'category': 'Animation',
     'location': 'View 3D > Tool Shelf > CPTR',
-    'description': 'Realtime view and record your data from cptr.tech',
-    'version': (0, 0, 1),
+    'description': 'Realtime view and record your data from CPTR.tech',
+    'version': (0, 1, 5),
     'blender': (2, 80, 0),
-    'wiki_url': 'https://cptr.tech/',
+    'wiki_url': 'https://app.cptr.tech/faq',
 }
 
 # If first startup of this plugin, load all modules normally
