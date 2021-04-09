@@ -1,9 +1,10 @@
 import bpy
-import datetime
 
-from ..core import recorder as recorder_manager
+from ..core.receiver import receiver
 from ..core.icon_manager import Icons
-from ..operators import receiver, recorder, hands
+from ..operators.recorder import RecorderStart, RecorderStop
+from ..operators.hands import ResetHands, LoadHands
+from ..operators.receiver import ReceiverStart, ReceiverStop
 
 row_scale = 0.75
 paired_inputs = {}
@@ -35,45 +36,40 @@ class ReceiverPanel(ToolPanel, bpy.types.Panel):
         layout.use_property_split = False
 
         col = layout.column()
+        prefs = bpy.context.preferences.addons['cptr-tech'].preferences
 
         row = col.row(align=True)
         row.label(text='Port:')
-        row.enabled = not receiver.receiver_enabled
-        row.prop(context.scene, 'cptr_receiver_port', text='')
+        row.enabled = not receiver.is_running
+        row.prop(prefs, 'receiver_port', text='')
 
-        port = context.scene.cptr_receiver_port
+        port = prefs.receiver_port
         row = col.row(align=True)
         row.operator("wm.url_open", text="Link port").url = f"https://app.cptr.tech/connect.html?port={port}"
 
         row = layout.row(align=True)
         row.scale_y = 1.3
-        if receiver.receiver_enabled:
-            row.operator(receiver.ReceiverStop.bl_idname, icon='PAUSE', depress=True)
+        row.enabled = receiver.is_connected and not receiver.is_in_transition
+        if receiver.is_running:
+            row.operator(ReceiverStop.bl_idname, icon='PAUSE', depress=True)
         else:
-            row.operator(receiver.ReceiverStart.bl_idname, icon='PLAY')
+            row.operator(ReceiverStart.bl_idname, icon='PLAY')
 
         row = layout.row(align=True)
         row.scale_y = 1.3
-        row.enabled = receiver.receiver_enabled
-        if not context.scene.cptr_recording:
-            row.operator(recorder.RecorderStart.bl_idname, icon_value=Icons.START_RECORDING.get_icon())
+        row.enabled = receiver.is_running
+        if receiver.is_recording:
+            row.operator(RecorderStop.bl_idname, icon='SNAP_FACE', depress=True)
         else:
-            row.operator(recorder.RecorderStop.bl_idname, icon='SNAP_FACE', depress=True)
-
-            # Calculate recording time
-            timestamps = list(recorder_manager.recorded_timestamps.keys())
-            if timestamps:
-                time_recorded = int(timestamps[-1] - timestamps[0])
-                row = layout.row(align=True)
-                row.label(text='Recording time: ' + str(datetime.timedelta(seconds=time_recorded)))
+            row.operator(RecorderStart.bl_idname, icon_value=Icons.START_RECORDING.get_icon())
 
         row = layout.row(align=True)
         row.enabled = True
-        row.operator(hands.ResetHands.bl_idname)
+        row.operator(ResetHands.bl_idname)
 
         row = layout.row(align=True)
         row.enabled = True
-        row.operator(hands.LoadHands.bl_idname)
+        row.operator(LoadHands.bl_idname)
 
 
 def add_indent(split, empty=False):

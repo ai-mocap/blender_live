@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from os.path import dirname, abspath, join
 
-from . import utils, minimal_hand
+from . import minimal_hand
 
 logger = logging.getLogger(__name__)
 
@@ -37,49 +37,71 @@ class CptrError(Exception):
 
 
 class Receiver:
-    def run(self):
+    def __init__(self):
+        self.websocket_connection = None
+        self.reset_state()
+
+    def reset_state(self):
+        self.is_running = False
+        self.is_recording = False
+        self.is_in_transition = False
+
+    def step(self):
         self.loop.stop()
         self.loop.run_forever()
-        self.process_data()
+        return 0.01  # 60 FPS
 
-    def process_data(self):
-        while not self.queue.empty():
-            data_raw = self.queue.get_nowait()
-            data = json.loads(data_raw)
-            if data.get('type') == 'error':
-                logger.error(f"Received error {data}")
-                raise CptrError(data['message'])
-            pt = datetime.fromisoformat(data['ts'])
-            current_timestamp = pt.timestamp()
-            if self.prev_timestamp is not None:
-                timestamp_delta = int((current_timestamp - self.prev_timestamp) * 100)
-            else:
-                timestamp_delta = 0
-            frame_idx = bpy.context.scene.frame_current + timestamp_delta
-            logger.debug(f"Hands: {data['hands'].keys()}")
-            if bpy.context.scene.cptr_recording:
-                bpy.context.scene.frame_set(frame_idx)
-                bpy.data.scenes["Scene"].frame_end = frame_idx + 1
-            left = data['hands'].get('Left')
-            right = data['hands'].get('Right')
-            if left:
-                self.left_hand.process_bones(left['relative_rotations'], left['relative_scales'])
-            if right:
-                self.right_hand.process_bones(right['relative_rotations'], right['relative_scales'])
+    def process_data(self, data):
+        pt = datetime.fromisoformat(data['ts'])
+        current_timestamp = pt.timestamp()
+        if self.prev_timestamp is not None:
+            timestamp_delta = int((current_timestamp - self.prev_timestamp) * 100)
+        else:
+            timestamp_delta = 0
+        frame_idx = bpy.context.scene.frame_current + timestamp_delta
+        logger.debug(f"Hands: {data['hands'].keys()}")
+        if self.is_recording:
+            bpy.context.scene.frame_set(frame_idx)
+            bpy.data.scenes["Scene"].frame_end = frame_idx + 1
+        left = data['hands'].get('Left')
+        right = data['hands'].get('Right')
+        if left:
+            self.left_hand.process_bones(left['relative_rotations'], left['relative_scales'])
+        if right:
+            self.right_hand.process_bones(right['relative_rotations'], right['relative_scales'])
 
-            self.prev_timestamp = current_timestamp
-            logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
+        self.prev_timestamp = current_timestamp
+        logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
 
     async def websocket_handler(self, request):
-        try:
-            logger.debug('ws connected')
-            ws = aiohttp.web.WebSocketResponse()
-            await ws.prepare(request)
+        logger.debug('websocket connected')
+        ws = aiohttp.web.WebSocketResponse()
+        await ws.prepare(request)
+        if self.websocket_connection is not None:
+            logger.error("Websocket is already connected, dropping connection")
+            return ws
+        self.websocket_connection = ws
 
+        try:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
-                    self.queue.put_nowait(msg.data)
-                    logger.debug(f'ws message appended to queue, new size={self.queue.qsize()}')
+                    data = json.loads(msg.data)
+                    if data['type'] == 'state':
+                        logger.debug(f"Received state {data}")
+                        self.is_running, was_running = data['isRunning'], self.is_running
+                        if self.is_running != was_running:
+                            self.init_hands()
+                        self.is_in_transition = False
+                    elif data['type'] == 'frame':
+                        if self.is_running:
+                            self.process_data(data)
+                        else:
+                            logger.warning('received ws message when we are not running. discarding')
+                    elif data['type'] == 'error':
+                        logger.error(f"Received error {data}")
+                        raise CptrError(data['message'])
+                    else:
+                        logger.error(f"Unexpected data type {data['type']}")
                 elif msg.type == aiohttp.WSMsgType.ERROR:
                     logger.debug(f'ws connection closed with exception {ws.exception()}')
         except Exception:
@@ -87,9 +109,11 @@ class Receiver:
             raise
         finally:
             logger.debug('websocket connection closed')
+            self.websocket_connection = None
+            self.reset_state()
         return ws
 
-    async def run_websocket_server(self, context, port):
+    async def run_websocket_server(self, port):
         self.app = aiohttp.web.Application()
         self.app.add_routes([aiohttp.web.get('/ws', self.websocket_handler)])
         self.runner = aiohttp.web.AppRunner(self.app)
@@ -107,14 +131,16 @@ class Receiver:
         except OSError as exc:
             if exc.errno == errno.EADDRINUSE:
                 logger.debug(f"Port {port} is in use, autoselecting free port")
-                await self.run_websocket_server(context, port=None)
-                context.scene.cptr_receiver_port = self.site._port
+                await self.run_websocket_server(port=None)
             else:
                 raise
 
         logger.debug("Started websocket server")
 
-    def start(self, context):
+    def get_port(self):
+        return self.site._port
+
+    def init_hands(self):
         self.left_hand = minimal_hand.Hand("left_")
         self.right_hand = minimal_hand.Hand("right_")
 
@@ -125,20 +151,52 @@ class Receiver:
         if bpy.context.object is not None:
             bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action="DESELECT")
-        self.loop = asyncio.get_event_loop()
-        self.prev_timestamp = 0
-        self.queue = asyncio.Queue()
-        self.loop.run_until_complete(self.run_websocket_server(context, context.scene.cptr_receiver_port))
-        logger.debug(f"Started listening on port {context.scene.cptr_receiver_port}")
-        logger.debug(f"Length of queue is {self.queue.qsize()}")
 
-    async def async_stop(self):
-        logger.debug("async_stop enter")
-        await self.runner.shutdown()
-        await self.runner.cleanup()
-        logger.debug("async_stop exit")
+    @property
+    def is_connected(self):
+        return self.websocket_connection is not None
+
+    def start(self):
+        self.is_in_transition = True
+        self.loop.run_until_complete(self.send_command('start'))
 
     def stop(self):
-        logger.debug("Stopping")
-        self.loop.run_until_complete(self.async_stop())
-        logger.debug("Stopped")
+        self.is_in_transition = True
+        self.loop.run_until_complete(self.send_command('stop'))
+
+    async def send_command(self, command):
+        await self.websocket_connection.send_json(dict(type='command', command=command))
+
+    def start_server(self):
+        logger.debug("Starting server")
+        self.loop = asyncio.get_event_loop()
+        self.prev_timestamp = 0
+        prefs = bpy.context.preferences.addons['cptr-tech'].preferences
+        self.loop.run_until_complete(self.run_websocket_server(prefs.receiver_port))
+        bpy.app.timers.register(self.step, persistent=True)
+        logger.debug("Started server")
+
+    async def async_stop_server(self):
+        await self.runner.shutdown()
+        await self.runner.cleanup()
+
+    def stop_server(self):
+        logger.debug("Stopping server")
+        try:
+            bpy.app.timers.unregister(self.step)
+        except ValueError:
+            pass
+        self.loop.run_until_complete(self.async_stop_server())
+        self.reset_state()
+        logger.debug("Stopped server")
+
+    def change_port(self, context):
+        self.stop_server()
+        self.start_server()
+
+
+def change_port(self, context):
+    receiver.change_port(context)
+
+
+receiver: Receiver = Receiver()

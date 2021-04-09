@@ -135,6 +135,7 @@ class Hand:
 
     def process_bones(self, relative_rotations, relative_scales):
         bones = self.object.pose.bones
+        from .receiver import receiver
         for idx, bone in enumerate(mpii_joints):
             parent = mpii_parents[bone]
             rel_quat = relative_rotations[idx]
@@ -147,5 +148,5 @@ class Hand:
                 if self.enable_scale:
                     scale = rel_scale * self.ref_scales[parent] / self.ref_scales[bone]
                     obj.scale = (scale, scale, scale)
-                if bpy.context.scene.cptr_recording:
+                if receiver.is_recording:
                     obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
