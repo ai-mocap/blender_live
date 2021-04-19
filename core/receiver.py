@@ -52,8 +52,11 @@ class Receiver:
         return 0.01  # 60 FPS
 
     def process_data(self, data):
-        pt = datetime.fromisoformat(data['ts'])
-        current_timestamp = pt.timestamp()
+        if isinstance(data['ts'], str):
+            pt = datetime.fromisoformat(data['ts'])
+            current_timestamp = pt.timestamp()
+        else:
+            current_timestamp = data['ts']
         if self.prev_timestamp is not None:
             timestamp_delta = int((current_timestamp - self.prev_timestamp) * 100)
         else:
