@@ -64,24 +64,6 @@ mpii_parents = dict(
 )
 
 
-def create_hands():
-    if bpy.context.object and bpy.context.object.mode != "OBJECT":
-        bpy.ops.object.mode_set(mode="OBJECT")
-    if not bpy.context.scene.objects.get("left_Skeleton"):
-        bpy.ops.object.select_all(action="SELECT")
-        bpy.ops.object.delete()
-
-        for ob in bpy.data.objects:
-            if ob.type == "CAMERA":
-                ob.select_set(False)
-
-        left = Hand('left_')
-        left.create_bones()
-        right = Hand('right_')
-        right.create_bones()
-        return left, right
-
-
 def load_hands():
     filepath = pathlib.Path(os.path.dirname(__file__)).parent.resolve() / "resources" / "handlmoved.blend"
 
@@ -150,3 +132,15 @@ class Hand:
                     obj.scale = (scale, scale, scale)
                 if receiver.is_recording:
                     obj.keyframe_insert(data_path="rotation_quaternion", index=-1)
+
+
+class Body:
+    def __init__(self):
+        self.name = 'BodySkeleton'
+
+    @property
+    def object(self):
+        if self.name in bpy.data.objects:
+            return bpy.data.objects[self.name]
+
+    
