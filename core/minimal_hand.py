@@ -2,7 +2,8 @@ import bpy
 from mathutils import Quaternion
 
 import os.path
-import pathlib
+from functools import lru_cache
+from pathlib import Path
 
 
 mpii_joints = [
@@ -64,16 +65,29 @@ mpii_parents = dict(
 )
 
 
-def load_hands():
-    filepath = pathlib.Path(os.path.dirname(__file__)).parent.resolve() / "resources" / "handlmoved.blend"
+@lru_cache()
+def resources() -> Path:
+    return Path(os.path.dirname(__file__)).parent.resolve() / "resources"
+
+
+def load_blend(filename):
+    filepath = resources() / filename
 
     with bpy.data.libraries.load(str(filepath)) as (data_from, data_to):
         data_to.objects = data_from.objects
 
-    objects = bpy.context.view_layer.active_layer_collection.collection.objects
-    for obj in data_to.objects:
-        if obj is not None:
-            objects.link(obj)
+        objects = bpy.context.view_layer.active_layer_collection.collection.objects
+        for obj in data_to.objects:
+            if obj is not None:
+                objects.link(obj)
+
+
+def load_hands():
+    load_blend("handlmoved.blend")
+
+
+def load_body():
+    load_blend("ue4_mannequin.blend")
 
 
 class Hand:
@@ -142,5 +156,3 @@ class Body:
     def object(self):
         if self.name in bpy.data.objects:
             return bpy.data.objects[self.name]
-
-    

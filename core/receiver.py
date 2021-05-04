@@ -144,13 +144,19 @@ class Receiver:
         return self.site._port
 
     def init_hands(self):
-        self.left_hand = minimal_hand.Hand("left_")
-        self.right_hand = minimal_hand.Hand("right_")
+        if 0:
+            self.left_hand = minimal_hand.Hand("left_")
+            self.right_hand = minimal_hand.Hand("right_")
 
-        if not self.left_hand.object and not self.right_hand.object:
-            minimal_hand.load_hands()
-        self.left_hand.save_pose()
-        self.right_hand.save_pose()
+            if not self.left_hand.object and not self.right_hand.object:
+                minimal_hand.load_hands()
+            self.left_hand.save_pose()
+            self.right_hand.save_pose()
+        self.body = minimal_hand.Body()
+        if not self.body.object:
+            minimal_hand.load_body()
+        self.body.save_pose()
+
         if bpy.context.object is not None:
             bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.select_all(action="DESELECT")
