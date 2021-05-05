@@ -1,6 +1,6 @@
 import bpy
 
-from ..core.minimal_hand import Hand, load_hands
+from ..core.minimal_hand import Skeleton, load_body
 
 
 class ResetHands(bpy.types.Operator):
@@ -10,8 +10,7 @@ class ResetHands(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        Hand('left_').reset_pose()
-        Hand('right_').reset_pose()
+        Skeleton('body').reset_pose()
         return {'FINISHED'}
 
 
@@ -22,5 +21,5 @@ class LoadHands(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        load_hands()
+        load_body()
         return {'FINISHED'}
