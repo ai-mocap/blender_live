@@ -10,7 +10,7 @@ class ResetHands(bpy.types.Operator):
     bl_options = {'INTERNAL'}
 
     def execute(self, context):
-        Skeleton('body').reset_pose()
+        Skeleton('root').reset_pose()
         return {'FINISHED'}
 
 

@@ -62,16 +62,21 @@ class Receiver:
         else:
             timestamp_delta = 0
         frame_idx = bpy.context.scene.frame_current + timestamp_delta
-        logger.debug(f"Hands: {data['hands'].keys()}")
         if self.is_recording:
             bpy.context.scene.frame_set(frame_idx)
             bpy.data.scenes["Scene"].frame_end = frame_idx + 1
-        left = data['hands'].get('Left')
-        right = data['hands'].get('Right')
-        if left:
-            self.left_hand.process_bones(left['relative_rotations'], left['relative_scales'])
-        if right:
-            self.right_hand.process_bones(right['relative_rotations'], right['relative_scales'])
+        if 'bones' in data:
+            bones = data['bones']
+            logger.debug(f"Bones: {bones.keys()}")
+            self.body.process_bones(bones)
+        elif 'hands' in data:
+            logger.debug(f"Hands: {data['hands'].keys()}")
+            left = data['hands'].get('Left')
+            right = data['hands'].get('Right')
+            if left:
+                self.left_hand.process_bones(left['relative_rotations'], left['relative_scales'])
+            if right:
+                self.right_hand.process_bones(right['relative_rotations'], right['relative_scales'])
 
         self.prev_timestamp = current_timestamp
         logger.debug(f"Timestamps: {timestamp_delta} {current_timestamp} {self.prev_timestamp} {data['ts']}")
@@ -88,12 +93,15 @@ class Receiver:
         try:
             async for msg in ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
-                    data = json.loads(msg.data)
+                    try:
+                        data = json.loads(msg.data)
+                    except json.JSONDecodeError:
+                        logger.exception(f"Failed to decode: {msg.data}")
                     if data['type'] == 'state':
                         logger.debug(f"Received state {data}")
                         self.is_running, was_running = data['isRunning'], self.is_running
                         if self.is_running != was_running:
-                            self.init_hands()
+                            self.init()
                         self.is_in_transition = False
                     elif data['type'] == 'frame':
                         if self.is_running:
@@ -143,7 +151,7 @@ class Receiver:
     def get_port(self):
         return self.site._port
 
-    def init_hands(self):
+    def init(self):
         if 0:
             self.left_hand = minimal_hand.Hand("left_")
             self.right_hand = minimal_hand.Hand("right_")
@@ -152,9 +160,10 @@ class Receiver:
                 minimal_hand.load_hands()
             self.left_hand.save_pose()
             self.right_hand.save_pose()
-        self.body = minimal_hand.Body()
-        if not self.body.object:
-            minimal_hand.load_body()
+        try:
+            self.body = minimal_hand.Skeleton('root')
+        except minimal_hand.InvalidRoot:
+            self.body = minimal_hand.load_body()
         self.body.save_pose()
 
         if bpy.context.object is not None:

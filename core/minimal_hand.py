@@ -97,7 +97,7 @@ def load_hands():
 
 def load_body():
     load_blend("body.blend")
-    return Skeleton("body")
+    return Skeleton("root")
 
 
 class Skeleton:
@@ -110,29 +110,25 @@ class Skeleton:
         self.enable_scale = False
 
     def reset_pose(self):
-        if self.object is None:
-            return
         for bone in self.object.pose.bones:
             bone.rotation_mode = "QUATERNION"
             bone.rotation_quaternion = Quaternion()
             bone.scale = (1, 1, 1)
 
     def save_pose(self):
-        if self.object is None:
-            return
         self.object.select_set(True)
         bpy.context.view_layer.objects.active = self.object
         bpy.ops.object.mode_set(mode="EDIT", toggle=False)
         edit_bones = self.object.data.edit_bones
         ref_quats = {None: Quaternion()}
-        for bone in self.object.pose.bones[0].children_recursive:
+        for bone in [self.object.pose.bones[0]] + self.object.pose.bones[0].children_recursive:
             if bone.name in edit_bones:
-                ref_quats[bone.name] = quat = edit_bones[bone.name].matrix.to_quaternion()
+                ref_quats[bone] = quat = edit_bones[bone.name].matrix.to_quaternion()
                 self.ref_scales[bone.name] = edit_bones[bone.name].length
             else:
-                ref_quats[bone.name] = quat = ref_quats[bone.parent.name]
+                ref_quats[bone] = quat = ref_quats[bone.parent]
                 self.ref_scales[bone.name] = self.ref_scales[bone.parent.name]
-            self.to_ref_quats[bone.name] = quat.inverted() @ ref_quats[bone.parent.name]
+            self.to_ref_quats[bone.name] = quat.inverted() @ ref_quats[bone.parent]
 
     def process_bones(self, received_bones):
         bones = self.object.pose.bones
