@@ -104,6 +104,7 @@ class Receiver:
                             self.init()
                         self.is_in_transition = False
                     elif data['type'] == 'frame':
+                        logger.info(f"Received frame {data['ts']}")
                         if self.is_running:
                             self.process_data(data)
                         else:
