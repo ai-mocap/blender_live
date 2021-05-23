@@ -148,3 +148,14 @@ class Skeleton:
                 bone.scale = (scale, scale, scale)
             if receiver.is_recording:
                 bone.keyframe_insert(data_path="rotation_quaternion", index=-1)
+
+        self.align_feet()
+
+    def align_feet(self):
+        lowest = min(self.object.pose.bones[bone].tail.z for bone in ['foot_l', 'foot_r'])
+        self.object.matrix_world.translation.z = -lowest
+
+    def set_position(self, position):
+        trans = self.object.matrix_world.translation
+        trans.x = position['x'] * 500
+        trans.y = position['y'] * 500

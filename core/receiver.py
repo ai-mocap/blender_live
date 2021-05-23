@@ -67,8 +67,10 @@ class Receiver:
             bpy.data.scenes["Scene"].frame_end = frame_idx + 1
         if 'bones' in data:
             bones = data['bones']
+            position = data['position']
             logger.debug(f"Bones: {bones.keys()}")
             self.body.process_bones(bones)
+            self.body.set_position(position)
         elif 'hands' in data:
             logger.debug(f"Hands: {data['hands'].keys()}")
             left = data['hands'].get('Left')
